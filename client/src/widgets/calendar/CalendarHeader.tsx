@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, ButtonBase } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { format } from 'date-fns';
 
@@ -28,57 +28,100 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         mb: 2.5,
+        gap: 1,
       }}
     >
       <Typography
         variant="h3"
-        sx={{ fontWeight: 700, color: 'primary.main', letterSpacing: '-0.01em' }}
+        sx={{
+          fontWeight: 700,
+          color: 'primary.main',
+          letterSpacing: '-0.01em',
+          fontSize: { xs: '1.75rem', sm: '2.5rem' },
+          flexShrink: 0,
+        }}
       >
         Calendar
       </Typography>
 
+      {/* Unified control group */}
       <Box
         sx={{
+          display: 'flex',
+          alignItems: 'stretch',
+          height: 40,
           border: '1px solid',
           borderColor: 'divider',
-          borderRadius: 2,
-          px: 2,
-          py: 0.75,
-          minWidth: 140,
-          textAlign: 'center',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          flexShrink: 0,
         }}
       >
-        <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.primary' }}>
-          {format(visibleDate, 'MMMM yyyy')}
-        </Typography>
-      </Box>
+        {/* Month indicator — desktop only */}
+        <Box
+          sx={{
+            display: { xs: 'none', sm: 'flex' },
+            alignItems: 'center',
+            px: 2,
+            borderRight: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 500, color: 'text.primary', whiteSpace: 'nowrap' }}
+          >
+            {format(visibleDate, 'MMMM yyyy')}
+          </Typography>
+        </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Button
-          variant="outlined"
+        {/* Today button */}
+        <ButtonBase
           onClick={onScrollToToday}
           disabled={isCurrentMonth}
           sx={{
-            borderRadius: 10,
-            px: 2.5,
-            py: 1,
-            borderColor: 'divider',
+            px: { xs: 1.5, sm: 2.5 },
+            fontSize: '0.875rem',
+            fontWeight: 500,
             color: 'text.primary',
-            '&:hover': { borderColor: 'primary.main', color: 'primary.main' },
-            '&.Mui-disabled': { opacity: 0.4 },
+            bgcolor: 'background.paper',
+            borderRight: '1px solid',
+            borderColor: 'divider',
+            transition: 'background 0.15s, color 0.15s',
+            '&:hover': { bgcolor: 'grey.50', color: 'primary.main' },
+            '&.Mui-disabled': { color: 'text.disabled', opacity: 0.4 },
           }}
         >
           Today
-        </Button>
+        </ButtonBase>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+        {/* Add task button */}
+        <ButtonBase
           onClick={onAddTask}
-          sx={{ borderRadius: 10, px: 2.5, py: 1 }}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: 0, sm: 0.75 },
+            px: { xs: 1.5, sm: 2.5 },
+            bgcolor: 'primary.main',
+            color: '#fff',
+            transition: 'background 0.15s',
+            '&:hover': { bgcolor: 'primary.dark' },
+          }}
         >
-          Add task
-        </Button>
+          <AddIcon sx={{ fontSize: 17 }} />
+          <Box
+            component="span"
+            sx={{
+              display: { xs: 'none', sm: 'inline' },
+              fontSize: '0.875rem',
+              fontWeight: 600,
+            }}
+          >
+            Add task
+          </Box>
+        </ButtonBase>
       </Box>
     </Box>
   );
