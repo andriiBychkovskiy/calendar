@@ -25,12 +25,13 @@ interface CalendarGridProps {
   onDayView: (date: Date) => void;
   onDeleteDay: (date: Date) => void;
   onCopyDay: (date: Date) => void;
+  showWeekdayHeader?: boolean;
 }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
-  year, month, progressMap, onAddTask, onDayView, onDeleteDay, onCopyDay,
+  year, month, progressMap, onAddTask, onDayView, onDeleteDay, onCopyDay, showWeekdayHeader = true,
 }) => {
   const viewDate = new Date(year, month - 1, 1);
   const monthStart = startOfMonth(viewDate);
@@ -46,32 +47,33 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
   return (
     <Box sx={{ width: '100%' }}>
-      {/* Weekday headers */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          mb: 0,
-        }}
-      >
-        {WEEKDAYS.map((day) => (
-          <Box key={day} sx={{ py: 1.25, textAlign: 'center' }}>
-            <Typography
-              variant="caption"
-              sx={{
-                fontWeight: 500,
-                color: 'primary.main',
-                fontSize: '1rem',
-                letterSpacing: '0.02em',
-              }}
-            >
-              {day}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
+      {showWeekdayHeader && (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            mb: 0,
+          }}
+        >
+          {WEEKDAYS.map((day) => (
+            <Box key={day} sx={{ py: 1.25, textAlign: 'center' }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 500,
+                  color: 'primary.main',
+                  fontSize: '1rem',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                {day}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      )}
 
       {/* Calendar rows */}
       {weeks.map((week, wi) => (

@@ -1,22 +1,25 @@
 import React from 'react';
-import { Box, Typography, IconButton, Button } from '@mui/material';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { Box, Typography, Button } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { format } from 'date-fns';
 
 interface CalendarHeaderProps {
-  year: number;
-  month: number;
-  onPrev: () => void;
-  onNext: () => void;
+  visibleYear: number;
+  visibleMonth: number;
   onAddTask: () => void;
+  onScrollToToday: () => void;
 }
 
 export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
-  year, month, onPrev, onNext, onAddTask,
+  visibleYear,
+  visibleMonth,
+  onAddTask,
+  onScrollToToday,
 }) => {
-  const date = new Date(year, month - 1, 1);
+  const visibleDate = new Date(visibleYear, visibleMonth - 1, 1);
+  const now = new Date();
+  const isCurrentMonth =
+    visibleYear === now.getFullYear() && visibleMonth === now.getMonth() + 1;
 
   return (
     <Box
@@ -34,62 +37,49 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         Calendar
       </Typography>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <IconButton
-          onClick={onPrev}
-          size="small"
-          sx={{
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            width: 32,
-            height: 32,
-            color: 'text.secondary',
-          }}
-        >
-          <ChevronLeftIcon sx={{ fontSize: 18 }} />
-        </IconButton>
-
-        <Box
-          sx={{
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            px: 2,
-            py: 0.5,
-            minWidth: 130,
-            textAlign: 'center',
-          }}
-        >
-          <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.primary' }}>
-            {format(date, 'MMMM yyyy')}
-          </Typography>
-        </Box>
-
-        <IconButton
-          onClick={onNext}
-          size="small"
-          sx={{
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 2,
-            width: 32,
-            height: 32,
-            color: 'text.secondary',
-          }}
-        >
-          <ChevronRightIcon sx={{ fontSize: 18 }} />
-        </IconButton>
+      <Box
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2,
+          px: 2,
+          py: 0.75,
+          minWidth: 140,
+          textAlign: 'center',
+        }}
+      >
+        <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.primary' }}>
+          {format(visibleDate, 'MMMM yyyy')}
+        </Typography>
       </Box>
 
-      <Button
-        variant="contained"
-        startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-        onClick={onAddTask}
-        sx={{ borderRadius: 10, px: 2.5, py: 1 }}
-      >
-        Add task
-      </Button>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Button
+          variant="outlined"
+          onClick={onScrollToToday}
+          disabled={isCurrentMonth}
+          sx={{
+            borderRadius: 10,
+            px: 2.5,
+            py: 1,
+            borderColor: 'divider',
+            color: 'text.primary',
+            '&:hover': { borderColor: 'primary.main', color: 'primary.main' },
+            '&.Mui-disabled': { opacity: 0.4 },
+          }}
+        >
+          Today
+        </Button>
+
+        <Button
+          variant="contained"
+          startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+          onClick={onAddTask}
+          sx={{ borderRadius: 10, px: 2.5, py: 1 }}
+        >
+          Add task
+        </Button>
+      </Box>
     </Box>
   );
 };
