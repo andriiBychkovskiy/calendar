@@ -34,16 +34,11 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   year, month, progressMap, onAddTask, onDayView, onDeleteDay, onCopyDay, showWeekdayHeader = true,
 }) => {
   const viewDate = new Date(year, month - 1, 1);
-  const monthStart = startOfMonth(viewDate);
-  const monthEnd = endOfMonth(viewDate);
-  const calStart = startOfWeek(monthStart);
-  const calEnd = endOfWeek(monthEnd);
-  const days = eachDayOfInterval({ start: calStart, end: calEnd });
-
-  const weeks: Date[][] = [];
-  for (let i = 0; i < days.length; i += 7) {
-    weeks.push(days.slice(i, i + 7));
-  }
+  const days = eachDayOfInterval({
+    start: startOfWeek(startOfMonth(viewDate)),
+    end: endOfWeek(endOfMonth(viewDate)),
+  });
+  const weeks = Array.from({ length: days.length / 7 }, (_, i) => days.slice(i * 7, i * 7 + 7));
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -54,7 +49,6 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
             gridTemplateColumns: 'repeat(7, 1fr)',
             borderBottom: '1px solid',
             borderColor: 'divider',
-            mb: 0,
           }}
         >
           {WEEKDAYS.map((day) => (
@@ -105,9 +99,8 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   position: 'relative',
                   background: today ? '#F0FDF7' : inMonth ? '#fff' : '#FAFAFA',
                   opacity: inMonth ? 1 : 0.5,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
+                  display: 'grid',
+                  gridTemplate: '1fr / 1fr',
                   cursor: 'default',
                   transition: 'background 0.15s',
                   '&:hover .add-btn': { opacity: 1 },
@@ -117,20 +110,22 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               >
                 <Box
                   sx={{
-                    width: 26,
-                    height: 26,
+                    gridArea: '1 / 1',
+                    alignSelf: 'start',
+                    justifySelf: 'start',
+                    width: { xs: today ? 20 : 26, sm: 26 },
+                    height: { xs: today ? 20 : 26, sm: 26 },
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: '50%',
                     background: today ? '#2D9B6F' : 'transparent',
-                    mb: 0.5,
                   }}
                 >
                   <Typography
                     variant="caption"
                     sx={{
-                      fontSize: '0.8125rem',
+                      fontSize: { xs: today ? '0.6875rem' : '0.8125rem', sm: '0.8125rem' },
                       fontWeight: today ? 600 : 400,
                       color: today ? '#fff' : inMonth ? 'text.primary' : 'text.disabled',
                       lineHeight: 1,
@@ -142,58 +137,64 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
                 {smiley && (
                   <Box
+                    onClick={() => onDayView(day)}
                     sx={{
-                      flex: 1,
-                      width: '100%',
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      gridArea: '1 / 1',
+                      alignSelf: 'center',
+                      justifySelf: 'center',
+                      width: { xs: 26, sm: 40 },
+                      height: { xs: 26, sm: 40 },
+                      display: 'inline-flex',
                       cursor: 'pointer',
                       borderRadius: 1,
                       transition: 'background 0.15s',
                       '&:hover': { background: 'rgba(45,155,111,0.07)' },
                     }}
-                    onClick={() => onDayView(day)}
                   >
-                    <SmileyIcon state={smiley} />
-                    <IconButton
-                      className="del-btn"
-                      size="small"
-                      onClick={(e) => { e.stopPropagation(); onDeleteDay(day); }}
-                      sx={{
-                        position: 'absolute',
-                        top: 2,
-                        right: 2,
-                        opacity: 0,
-                        width: 20,
-                        height: 20,
-                        color: 'primary.main',
-                        transition: 'opacity 0.15s',
-                        '&:hover': { opacity: 0.7, background: 'transparent' },
-                      }}
-                    >
-                      <DeleteOutlineIcon sx={{ fontSize: 14 }} />
-                    </IconButton>
-                    <IconButton
-                      className="copy-btn"
-                      size="small"
-                      onClick={(e) => { e.stopPropagation(); onCopyDay(day); }}
-                      sx={{
-                        position: 'absolute',
-                        bottom: 2,
-                        left: 2,
-                        opacity: 0,
-                        width: 20,
-                        height: 20,
-                        color: 'primary.main',
-                        transition: 'opacity 0.15s',
-                        '&:hover': { opacity: 0.7, background: 'transparent' },
-                      }}
-                    >
-                      <ContentCopyIcon sx={{ fontSize: 13 }} />
-                    </IconButton>
+                    <SmileyIcon state={smiley} size="100%" />
                   </Box>
+                )}
+
+                {hasTasks && (
+                  <IconButton
+                    className="del-btn"
+                    size="small"
+                    onClick={(e) => { e.stopPropagation(); onDeleteDay(day); }}
+                    sx={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      opacity: { xs: 1, sm: 0 },
+                      width: 20,
+                      height: 20,
+                      color: 'primary.main',
+                      transition: 'opacity 0.15s',
+                      '&:hover': { opacity: 0.7, background: 'transparent' },
+                    }}
+                  >
+                    <DeleteOutlineIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                )}
+
+                {hasTasks && (
+                  <IconButton
+                    className="copy-btn"
+                    size="small"
+                    onClick={(e) => { e.stopPropagation(); onCopyDay(day); }}
+                    sx={{
+                      position: 'absolute',
+                      bottom: 4,
+                      left: 4,
+                      opacity: { xs: 1, sm: 0 },
+                      width: 20,
+                      height: 20,
+                      color: 'primary.main',
+                      transition: 'opacity 0.15s',
+                      '&:hover': { opacity: 0.7, background: 'transparent' },
+                    }}
+                  >
+                    <ContentCopyIcon sx={{ fontSize: 13 }} />
+                  </IconButton>
                 )}
 
                 <IconButton
@@ -204,7 +205,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                     position: 'absolute',
                     bottom: 4,
                     right: 4,
-                    opacity: 0,
+                    opacity: { xs: 1, sm: 0 },
                     width: 22,
                     height: 22,
                     border: '1px solid',
