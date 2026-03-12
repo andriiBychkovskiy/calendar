@@ -403,7 +403,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
               disabled={localTasks.length === 0}
               sx={{ flex: 1, py: 1, borderColor: 'error.light', color: 'error.main', '&:hover': { background: 'rgba(211,47,47,0.04)', borderColor: 'error.main' } }}
             >
-              Delete list
+              Delete
             </Button>
             <Button variant="contained" onClick={handleApply} disabled={applyIsDisabled} sx={SX.primaryBtn}>
               {applying ? <CircularProgress size={18} color="inherit" /> : 'Apply'}
