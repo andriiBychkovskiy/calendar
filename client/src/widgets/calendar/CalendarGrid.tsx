@@ -197,27 +197,29 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   </IconButton>
                 )}
 
-                <IconButton
-                  className="add-btn"
-                  size="small"
-                  onClick={() => onAddTask(day)}
-                  sx={{
-                    position: 'absolute',
-                    bottom: 4,
-                    right: 4,
-                    opacity: { xs: 1, sm: 0 },
-                    width: 22,
-                    height: 22,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1.5,
-                    color: 'text.secondary',
-                    transition: 'opacity 0.15s',
-                    '&:hover': { background: '#F1F5F9', borderColor: '#CBD5E1' },
-                  }}
-                >
-                  <AddIcon sx={{ fontSize: 14 }} />
-                </IconButton>
+                {!hasTasks && (
+                  <IconButton
+                    className="add-btn"
+                    size="small"
+                    onClick={() => onAddTask(day)}
+                    sx={{
+                      position: 'absolute',
+                      bottom: 4,
+                      right: 4,
+                      opacity: { xs: 1, sm: 0 },
+                      width: 22,
+                      height: 22,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1.5,
+                      color: 'text.secondary',
+                      transition: 'opacity 0.15s',
+                      '&:hover': { background: '#F1F5F9', borderColor: '#CBD5E1' },
+                    }}
+                  >
+                    <AddIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                )}
               </Box>
             );
           })}
