@@ -53,8 +53,7 @@ export const ExpansesAccordion: React.FC<ExpansesAccordionProps> = ({
             <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography
                 variant="body2"
-                noWrap
-                sx={{ flex: 1, fontSize: '0.875rem', color: 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}
+                sx={{ flex: 1, fontSize: '0.875rem', color: 'text.primary' }}
               >
                 {item.text}
               </Typography>
