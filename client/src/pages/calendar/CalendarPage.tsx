@@ -16,6 +16,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { CalendarHeader } from '@widgets/calendar/CalendarHeader';
 import { MonthSection } from '@widgets/calendar/MonthSection';
 import { AddTaskModal } from '@features/add-task/AddTaskModal';
+import { OptionsModal } from '@features/options/OptionsModal';
 import { useTaskStore } from '@entities/task/store';
 import { useAuthStore } from '@entities/user/store';
 import { authApi } from '@shared/api/auth.api';
@@ -31,6 +32,8 @@ const CalendarPage: React.FC = () => {
   const {
     loadedMonths,
     progressMap,
+    hasEntriesMap,
+    expensesMap,
     loading,
     loadingMore,
     tasks,
@@ -43,6 +46,7 @@ const CalendarPage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'view' | 'copy'>('create');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteDate, setDeleteDate] = useState<Date | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -231,6 +235,7 @@ const CalendarPage: React.FC = () => {
                 visibleMonth={visibleMonth.month}
                 onAddTask={() => handleAddTask()}
                 onScrollToToday={handleScrollToToday}
+                onOpenOptions={() => setOptionsOpen(true)}
               />
             </Box>
 
@@ -276,6 +281,8 @@ const CalendarPage: React.FC = () => {
                     year={year}
                     month={month}
                     progressMap={progressMap}
+                    hasEntriesMap={hasEntriesMap}
+                    expensesMap={expensesMap}
                     onAddTask={handleAddTask}
                     onDayView={handleDayView}
                     onDeleteDay={handleDeleteDay}
@@ -308,6 +315,11 @@ const CalendarPage: React.FC = () => {
         onClose={() => setModalOpen(false)}
         defaultDate={selectedDate}
         mode={modalMode as 'create' | 'view' | 'copy'}
+      />
+
+      <OptionsModal
+        open={optionsOpen}
+        onClose={() => setOptionsOpen(false)}
       />
 
       <Dialog

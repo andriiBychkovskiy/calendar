@@ -10,6 +10,8 @@ interface MonthKey {
 interface TaskState {
   tasks: Task[];
   progressMap: ProgressMap;
+  hasEntriesMap: Record<string, boolean>;
+  expensesMap: Record<string, number>;
   loading: boolean;
   loadingMore: boolean;
   error: string | null;
@@ -23,19 +25,40 @@ interface TaskState {
   removeTask: (id: string) => void;
 }
 
-const recalcProgressForDate = (tasks: Task[], dateKey: string): number => {
+// Returns undefined when there are no task items (only expanses or nothing)
+const recalcProgressForDate = (tasks: Task[], dateKey: string): number | undefined => {
   const dayTasks = tasks.filter((t) => t.dueDate.split('T')[0] === dateKey);
   let total = 0;
   let completed = 0;
   for (const t of dayTasks) {
-    if (t.checklist.length === 0) {
-      total += 1;
-    } else {
-      total += t.checklist.length;
-      completed += t.checklist.filter((c) => c.completed).length;
+    const taskItems = t.checklist.filter((c) => c.type !== 'expanse');
+    total += taskItems.length;
+    completed += taskItems.filter((c) => c.completed).length;
+  }
+  if (total === 0) return undefined;
+  return Math.round((completed / total) * 100);
+};
+
+const computeHasEntriesMap = (tasks: Task[]): Record<string, boolean> => {
+  const map: Record<string, boolean> = {};
+  for (const t of tasks) {
+    map[t.dueDate.split('T')[0]] = true;
+  }
+  return map;
+};
+
+const computeExpensesMap = (tasks: Task[]): Record<string, number> => {
+  const map: Record<string, number> = {};
+  for (const t of tasks) {
+    const dateKey = t.dueDate.split('T')[0];
+    const dayTotal = t.checklist
+      .filter((c) => c.type === 'expanse')
+      .reduce((sum, c) => sum + (c.amount ?? 0), 0);
+    if (dayTotal > 0) {
+      map[dateKey] = (map[dateKey] ?? 0) + dayTotal;
     }
   }
-  return total > 0 ? Math.round((completed / total) * 100) : 0;
+  return map;
 };
 
 const fetchMonthData = async (year: number, month: number) => {
@@ -51,7 +74,7 @@ const mergeMonthResults = (results: [Task[], ProgressMap][]) => {
     (acc, [, monthProgress]) => ({ ...acc, ...monthProgress }),
     {}
   );
-  return { tasks, progressMap };
+  return { tasks, progressMap, hasEntriesMap: computeHasEntriesMap(tasks), expensesMap: computeExpensesMap(tasks) };
 };
 
 const now = new Date();
@@ -60,6 +83,8 @@ const initialMonth: MonthKey = { year: now.getFullYear(), month: now.getMonth() 
 export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: [],
   progressMap: {},
+  hasEntriesMap: {},
+  expensesMap: {},
   loading: false,
   loadingMore: false,
   error: null,
@@ -94,6 +119,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         loadedMonths: [...state.loadedMonths, nextMonth],
         tasks: [...state.tasks, ...tasks],
         progressMap: { ...state.progressMap, ...progressMap },
+        hasEntriesMap: { ...state.hasEntriesMap, ...computeHasEntriesMap(tasks) },
+        expensesMap: { ...state.expensesMap, ...computeExpensesMap(tasks) },
         loadingMore: false,
       }));
     } catch (err) {
@@ -118,12 +145,18 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     set((state) => {
       const tasks = [...state.tasks, task];
       const dateKey = task.dueDate.split('T')[0];
+      const newProgress = recalcProgressForDate(tasks, dateKey);
+      const progressMap = { ...state.progressMap };
+      if (newProgress !== undefined) {
+        progressMap[dateKey] = newProgress;
+      } else {
+        delete progressMap[dateKey];
+      }
       return {
         tasks,
-        progressMap: {
-          ...state.progressMap,
-          [dateKey]: recalcProgressForDate(tasks, dateKey),
-        },
+        progressMap,
+        hasEntriesMap: { ...state.hasEntriesMap, [dateKey]: true },
+        expensesMap: computeExpensesMap(tasks),
       };
     });
     get().silentRefetch();
@@ -140,18 +173,26 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     set((state) => {
       const tasks = state.tasks.map((t) => (t._id === task._id ? task : t));
       const dateKey = task.dueDate.split('T')[0];
-      return {
-        tasks,
-        progressMap: {
-          ...state.progressMap,
-          [dateKey]: recalcProgressForDate(tasks, dateKey),
-        },
-      };
+      const newProgress = recalcProgressForDate(tasks, dateKey);
+      const progressMap = { ...state.progressMap };
+      if (newProgress !== undefined) {
+        progressMap[dateKey] = newProgress;
+      } else {
+        delete progressMap[dateKey];
+      }
+      return { tasks, progressMap, expensesMap: computeExpensesMap(tasks) };
     });
   },
 
   removeTask: (id) => {
-    set((state) => ({ tasks: state.tasks.filter((t) => t._id !== id) }));
+    set((state) => {
+      const tasks = state.tasks.filter((t) => t._id !== id);
+      return {
+        tasks,
+        hasEntriesMap: computeHasEntriesMap(tasks),
+        expensesMap: computeExpensesMap(tasks),
+      };
+    });
     get().silentRefetch();
   },
 }));

@@ -2,6 +2,9 @@ export interface ChecklistItem {
   _id?: string;
   text: string;
   completed: boolean;
+  type?: 'task' | 'expanse';
+  optionId?: string;
+  amount?: number;
 }
 
 export interface Task {
@@ -45,3 +48,39 @@ export const getSmileyState = (percentage: number): SmileyState => {
   if (percentage < 90) return 'happy';
   return 'celebratory';
 };
+
+// ─── Options ──────────────────────────────────────────────────────────────────
+
+export interface TaskOption {
+  id: string;
+  value: string;
+}
+
+export interface TaskGroup {
+  id: string;
+  title: string;
+  tasks: TaskOption[];
+}
+
+export interface TaskOptions {
+  id: string;
+  title: string;
+  groups: TaskGroup[];
+}
+
+export interface ExpanseOption {
+  id: string;
+  value: string;
+}
+
+export interface ExpanseGroup {
+  id: string;
+  title: string;
+  expanses: ExpanseOption[];
+}
+
+export interface ExpansesOptions {
+  id: string;
+  title: string;
+  groups: ExpanseGroup[];
+}

@@ -1,5 +1,7 @@
 import React from 'react';
 import { Box, Typography, IconButton } from '@mui/material';
+import { useOptionsStore } from '@entities/options/store';
+import { CURRENCIES } from '@entities/options/currencies';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -21,6 +23,8 @@ interface CalendarGridProps {
   year: number;
   month: number;
   progressMap: ProgressMap;
+  hasEntriesMap: Record<string, boolean>;
+  expensesMap: Record<string, number>;
   onAddTask: (date: Date) => void;
   onDayView: (date: Date) => void;
   onDeleteDay: (date: Date) => void;
@@ -31,8 +35,10 @@ interface CalendarGridProps {
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
-  year, month, progressMap, onAddTask, onDayView, onDeleteDay, onCopyDay, showWeekdayHeader = true,
+  year, month, progressMap, hasEntriesMap, expensesMap, onAddTask, onDayView, onDeleteDay, onCopyDay, showWeekdayHeader = true,
 }) => {
+  const currencyCode = useOptionsStore((s) => s.currency);
+  const currencySymbol = (CURRENCIES.find((c) => c.code === currencyCode) ?? CURRENCIES[0]).symbol;
   const viewDate = new Date(year, month - 1, 1);
   const days = eachDayOfInterval({
     start: startOfWeek(startOfMonth(viewDate)),
@@ -85,7 +91,9 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
             const today = isToday(day);
             const dateKey = format(day, 'yyyy-MM-dd');
             const progress = progressMap[dateKey];
+            const hasEntries = !!hasEntriesMap[dateKey];
             const hasTasks = progress !== undefined;
+            const dayExpenses = expensesMap[dateKey] ?? 0;
             const smiley = hasTasks ? getSmileyState(progress) : null;
 
             return (
@@ -155,7 +163,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   </Box>
                 )}
 
-                {hasTasks && (
+                {hasEntries && (
                   <IconButton
                     className="del-btn"
                     size="small"
@@ -197,7 +205,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   </IconButton>
                 )}
 
-                {!hasTasks && (
+                {!hasEntries && (
                   <IconButton
                     className="add-btn"
                     size="small"
@@ -219,6 +227,23 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   >
                     <AddIcon sx={{ fontSize: 14 }} />
                   </IconButton>
+                )}
+
+                {dayExpenses > 0 && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      position: 'absolute',
+                      bottom: 5,
+                      right: 6,
+                      fontSize: '0.6875rem',
+                      fontWeight: 600,
+                      color: 'primary.main',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {currencySymbol}{dayExpenses % 1 === 0 ? dayExpenses : dayExpenses.toFixed(2)}
+                  </Typography>
                 )}
               </Box>
             );

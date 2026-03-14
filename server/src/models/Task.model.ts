@@ -4,6 +4,9 @@ export interface IChecklistItem {
   _id?: mongoose.Types.ObjectId;
   text: string;
   completed: boolean;
+  type?: 'task' | 'expanse';
+  optionId?: string;
+  amount?: number;
 }
 
 export interface ITask extends Document {
@@ -17,6 +20,9 @@ export interface ITask extends Document {
 const ChecklistItemSchema = new Schema<IChecklistItem>({
   text: { type: String, required: true, trim: true },
   completed: { type: Boolean, default: false },
+  type: { type: String, enum: ['task', 'expanse'], default: 'task' },
+  optionId: { type: String },
+  amount: { type: Number },
 });
 
 const TaskSchema = new Schema<ITask>(

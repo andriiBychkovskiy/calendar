@@ -101,17 +101,18 @@ export const getDailyProgress = async (req: AuthRequest, res: Response): Promise
       if (!progressMap[dateKey]) {
         progressMap[dateKey] = { total: 0, completed: 0 };
       }
-      if (task.checklist.length === 0) {
-        progressMap[dateKey].total += 1;
-      } else {
-        progressMap[dateKey].total += task.checklist.length;
-        progressMap[dateKey].completed += task.checklist.filter((c) => c.completed).length;
+      const taskItems = task.checklist.filter((c) => c.type !== 'expanse');
+      if (taskItems.length > 0) {
+        progressMap[dateKey].total += taskItems.length;
+        progressMap[dateKey].completed += taskItems.filter((c) => c.completed).length;
       }
     }
 
     const result: Record<string, number> = {};
     for (const [date, { total, completed }] of Object.entries(progressMap)) {
-      result[date] = total > 0 ? Math.round((completed / total) * 100) : 0;
+      if (total > 0) {
+        result[date] = Math.round((completed / total) * 100);
+      }
     }
 
     res.json(result);
