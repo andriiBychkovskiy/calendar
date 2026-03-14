@@ -181,7 +181,7 @@ const CalendarPage: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 3,
+        p: 1.5,
         overflow: 'hidden',
       }}
     >
