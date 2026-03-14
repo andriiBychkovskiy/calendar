@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { optionsApi } from '@shared/api/options.api';
 import type {
   TaskOptions,
   ExpansesOptions,
@@ -25,6 +25,9 @@ interface OptionsState {
   taskOptions: TaskOptions;
   expansesOptions: ExpansesOptions;
   currency: string;
+  isLoading: boolean;
+  saveError: boolean;
+  loadOptions: () => Promise<void>;
   setCurrency: (code: string) => void;
   addTaskGroup: (group: TaskGroup) => void;
   updateTaskGroup: (groupId: string, title: string) => void;
@@ -40,140 +43,173 @@ interface OptionsState {
   removeExpanseOption: (groupId: string, expanseId: string) => void;
 }
 
-export const useOptionsStore = create<OptionsState>()(
-  persist(
-    (set) => ({
-      taskOptions: initialTaskOptions,
-      expansesOptions: initialExpansesOptions,
-      currency: 'USD',
+const saveToServer = (get: () => OptionsState, set: (partial: Partial<OptionsState>) => void) => {
+  const { taskOptions, expansesOptions, currency } = get();
+  optionsApi
+    .updateOptions({ taskGroups: taskOptions.groups, expanseGroups: expansesOptions.groups, currency })
+    .then(() => set({ saveError: false }))
+    .catch(() => set({ saveError: true }));
+};
 
-      setCurrency: (code) => set({ currency: code }),
+export const useOptionsStore = create<OptionsState>()((set, get) => ({
+  taskOptions: initialTaskOptions,
+  expansesOptions: initialExpansesOptions,
+  currency: 'USD',
+  isLoading: false,
+  saveError: false,
 
-      addTaskGroup: (group) =>
-        set((state) => ({
-          taskOptions: {
-            ...state.taskOptions,
-            groups: [...state.taskOptions.groups, group],
-          },
-        })),
+  loadOptions: async () => {
+    set({ isLoading: true });
+    try {
+      const { taskGroups, expanseGroups, currency } = await optionsApi.getOptions();
+      set({
+        taskOptions: { ...initialTaskOptions, groups: taskGroups },
+        expansesOptions: { ...initialExpansesOptions, groups: expanseGroups },
+        currency,
+      });
+    } catch (err) {
+      console.error('Failed to load options:', err);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
-      updateTaskGroup: (groupId, title) =>
-        set((state) => ({
-          taskOptions: {
-            ...state.taskOptions,
-            groups: state.taskOptions.groups.map((g) =>
-              g.id === groupId ? { ...g, title } : g
-            ),
-          },
-        })),
+  setCurrency: (code) => {
+    set({ currency: code });
+    saveToServer(get, set);
+  },
 
-      removeTaskGroup: (groupId) =>
-        set((state) => ({
-          taskOptions: {
-            ...state.taskOptions,
-            groups: state.taskOptions.groups.filter((g) => g.id !== groupId),
-          },
-        })),
+  addTaskGroup: (group) => {
+    set((state) => ({
+      taskOptions: { ...state.taskOptions, groups: [...state.taskOptions.groups, group] },
+    }));
+    saveToServer(get, set);
+  },
 
-      addTaskOption: (groupId, task) =>
-        set((state) => ({
-          taskOptions: {
-            ...state.taskOptions,
-            groups: state.taskOptions.groups.map((g) =>
-              g.id === groupId ? { ...g, tasks: [...g.tasks, task] } : g
-            ),
-          },
-        })),
+  updateTaskGroup: (groupId, title) => {
+    set((state) => ({
+      taskOptions: {
+        ...state.taskOptions,
+        groups: state.taskOptions.groups.map((g) => (g.id === groupId ? { ...g, title } : g)),
+      },
+    }));
+    saveToServer(get, set);
+  },
 
-      updateTaskOption: (groupId, taskId, value) =>
-        set((state) => ({
-          taskOptions: {
-            ...state.taskOptions,
-            groups: state.taskOptions.groups.map((g) =>
-              g.id !== groupId
-                ? g
-                : { ...g, tasks: g.tasks.map((t) => (t.id === taskId ? { ...t, value } : t)) }
-            ),
-          },
-        })),
+  removeTaskGroup: (groupId) => {
+    set((state) => ({
+      taskOptions: {
+        ...state.taskOptions,
+        groups: state.taskOptions.groups.filter((g) => g.id !== groupId),
+      },
+    }));
+    saveToServer(get, set);
+  },
 
-      removeTaskOption: (groupId, taskId) =>
-        set((state) => ({
-          taskOptions: {
-            ...state.taskOptions,
-            groups: state.taskOptions.groups.map((g) =>
-              g.id !== groupId
-                ? g
-                : { ...g, tasks: g.tasks.filter((t) => t.id !== taskId) }
-            ),
-          },
-        })),
+  addTaskOption: (groupId, task) => {
+    set((state) => ({
+      taskOptions: {
+        ...state.taskOptions,
+        groups: state.taskOptions.groups.map((g) =>
+          g.id === groupId ? { ...g, tasks: [...g.tasks, task] } : g
+        ),
+      },
+    }));
+    saveToServer(get, set);
+  },
 
-      addExpanseGroup: (group) =>
-        set((state) => ({
-          expansesOptions: {
-            ...state.expansesOptions,
-            groups: [...state.expansesOptions.groups, group],
-          },
-        })),
+  updateTaskOption: (groupId, taskId, value) => {
+    set((state) => ({
+      taskOptions: {
+        ...state.taskOptions,
+        groups: state.taskOptions.groups.map((g) =>
+          g.id !== groupId
+            ? g
+            : { ...g, tasks: g.tasks.map((t) => (t.id === taskId ? { ...t, value } : t)) }
+        ),
+      },
+    }));
+    saveToServer(get, set);
+  },
 
-      updateExpanseGroup: (groupId, title) =>
-        set((state) => ({
-          expansesOptions: {
-            ...state.expansesOptions,
-            groups: state.expansesOptions.groups.map((g) =>
-              g.id === groupId ? { ...g, title } : g
-            ),
-          },
-        })),
+  removeTaskOption: (groupId, taskId) => {
+    set((state) => ({
+      taskOptions: {
+        ...state.taskOptions,
+        groups: state.taskOptions.groups.map((g) =>
+          g.id !== groupId
+            ? g
+            : { ...g, tasks: g.tasks.filter((t) => t.id !== taskId) }
+        ),
+      },
+    }));
+    saveToServer(get, set);
+  },
 
-      removeExpanseGroup: (groupId) =>
-        set((state) => ({
-          expansesOptions: {
-            ...state.expansesOptions,
-            groups: state.expansesOptions.groups.filter((g) => g.id !== groupId),
-          },
-        })),
+  addExpanseGroup: (group) => {
+    set((state) => ({
+      expansesOptions: { ...state.expansesOptions, groups: [...state.expansesOptions.groups, group] },
+    }));
+    saveToServer(get, set);
+  },
 
-      addExpanseOption: (groupId, expanse) =>
-        set((state) => ({
-          expansesOptions: {
-            ...state.expansesOptions,
-            groups: state.expansesOptions.groups.map((g) =>
-              g.id === groupId ? { ...g, expanses: [...g.expanses, expanse] } : g
-            ),
-          },
-        })),
+  updateExpanseGroup: (groupId, title) => {
+    set((state) => ({
+      expansesOptions: {
+        ...state.expansesOptions,
+        groups: state.expansesOptions.groups.map((g) => (g.id === groupId ? { ...g, title } : g)),
+      },
+    }));
+    saveToServer(get, set);
+  },
 
-      updateExpanseOption: (groupId, expanseId, value) =>
-        set((state) => ({
-          expansesOptions: {
-            ...state.expansesOptions,
-            groups: state.expansesOptions.groups.map((g) =>
-              g.id !== groupId
-                ? g
-                : {
-                    ...g,
-                    expanses: g.expanses.map((e) =>
-                      e.id === expanseId ? { ...e, value } : e
-                    ),
-                  }
-            ),
-          },
-        })),
+  removeExpanseGroup: (groupId) => {
+    set((state) => ({
+      expansesOptions: {
+        ...state.expansesOptions,
+        groups: state.expansesOptions.groups.filter((g) => g.id !== groupId),
+      },
+    }));
+    saveToServer(get, set);
+  },
 
-      removeExpanseOption: (groupId, expanseId) =>
-        set((state) => ({
-          expansesOptions: {
-            ...state.expansesOptions,
-            groups: state.expansesOptions.groups.map((g) =>
-              g.id !== groupId
-                ? g
-                : { ...g, expanses: g.expanses.filter((e) => e.id !== expanseId) }
-            ),
-          },
-        })),
-    }),
-    { name: 'calendar-options' }
-  )
-);
+  addExpanseOption: (groupId, expanse) => {
+    set((state) => ({
+      expansesOptions: {
+        ...state.expansesOptions,
+        groups: state.expansesOptions.groups.map((g) =>
+          g.id === groupId ? { ...g, expanses: [...g.expanses, expanse] } : g
+        ),
+      },
+    }));
+    saveToServer(get, set);
+  },
+
+  updateExpanseOption: (groupId, expanseId, value) => {
+    set((state) => ({
+      expansesOptions: {
+        ...state.expansesOptions,
+        groups: state.expansesOptions.groups.map((g) =>
+          g.id !== groupId
+            ? g
+            : { ...g, expanses: g.expanses.map((e) => (e.id === expanseId ? { ...e, value } : e)) }
+        ),
+      },
+    }));
+    saveToServer(get, set);
+  },
+
+  removeExpanseOption: (groupId, expanseId) => {
+    set((state) => ({
+      expansesOptions: {
+        ...state.expansesOptions,
+        groups: state.expansesOptions.groups.map((g) =>
+          g.id !== groupId
+            ? g
+            : { ...g, expanses: g.expanses.filter((e) => e.id !== expanseId) }
+        ),
+      },
+    }));
+    saveToServer(get, set);
+  },
+}));

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Dialog, DialogTitle, DialogContent,
   Box, Typography, IconButton, Tabs, Tab,
-  Select, MenuItem,
+  Select, MenuItem, Alert,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -19,7 +19,8 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose }) => 
   const [activeTab, setActiveTab] = useState(0);
   const {
     taskOptions, expansesOptions,
-    currency, setCurrency,
+    currency, saveError,
+    setCurrency,
     addTaskGroup, updateTaskGroup, removeTaskGroup,
     addTaskOption, updateTaskOption, removeTaskOption,
     addExpanseGroup, updateExpanseGroup, removeExpanseGroup,
@@ -72,6 +73,11 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose }) => 
       </Box>
 
       <DialogContent sx={{ pt: 2.5, pb: 3, px: 3, minHeight: 300, maxHeight: 480, overflowY: 'auto' }}>
+        {saveError && (
+          <Alert severity="error" sx={{ mb: 2, fontSize: '0.8125rem' }}>
+            Failed to save options. Please try again.
+          </Alert>
+        )}
         {activeTab === 0 && (
           <OptionsSection
             title="Task Options"

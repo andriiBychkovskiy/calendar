@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Alert,
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { CalendarHeader } from '@widgets/calendar/CalendarHeader';
@@ -19,6 +20,7 @@ import { AddTaskModal } from '@features/add-task/AddTaskModal';
 import { OptionsModal } from '@features/options/OptionsModal';
 import { useTaskStore } from '@entities/task/store';
 import { useAuthStore } from '@entities/user/store';
+import { useOptionsStore } from '@entities/options/store';
 import { authApi } from '@shared/api/auth.api';
 import { taskApi } from '@shared/api/task.api';
 import { format } from 'date-fns';
@@ -36,12 +38,14 @@ const CalendarPage: React.FC = () => {
     expensesMap,
     loading,
     loadingMore,
+    error,
     tasks,
     fetchTasks,
     appendNextMonth,
     silentRefetch,
   } = useTaskStore();
   const { user, clearAuth } = useAuthStore();
+  const loadOptions = useOptionsStore((s) => s.loadOptions);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'view' | 'copy'>('create');
@@ -62,6 +66,7 @@ const CalendarPage: React.FC = () => {
 
   useEffect(() => {
     fetchTasks();
+    loadOptions();
   }, []);
 
   useEffect(() => {
@@ -272,6 +277,19 @@ const CalendarPage: React.FC = () => {
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
                 <CircularProgress size={32} sx={{ color: 'primary.main' }} />
+              </Box>
+            ) : error ? (
+              <Box sx={{ p: 4 }}>
+                <Alert
+                  severity="error"
+                  action={
+                    <Button color="inherit" size="small" onClick={fetchTasks}>
+                      Retry
+                    </Button>
+                  }
+                >
+                  {error}
+                </Alert>
               </Box>
             ) : (
               <>
