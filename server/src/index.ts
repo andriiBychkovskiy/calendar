@@ -11,7 +11,7 @@ import optionsRoutes from './routes/options.routes';
 
 dotenv.config();
 
-const REQUIRED_ENV = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET', 'CLIENT_URL'] as const;
+const REQUIRED_ENV = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'] as const;
 for (const key of REQUIRED_ENV) {
   if (!process.env[key]) {
     console.error(`[startup] Missing required environment variable: ${key}`);
@@ -24,12 +24,9 @@ const PORT = process.env.PORT || 5000;
 
 app.set('trust proxy', 1);
 
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true,
-  })
-);
+if (process.env.CLIENT_URL) {
+  app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+}
 app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
 
