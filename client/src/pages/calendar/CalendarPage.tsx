@@ -20,6 +20,7 @@ import { AddTaskModal } from '@features/add-task/AddTaskModal';
 import { OptionsModal } from '@features/options/OptionsModal';
 import { useTaskStore } from '@entities/task/store';
 import { useAuthStore } from '@entities/user/store';
+import { useOptionsStore } from '@entities/options/store';
 import { authApi } from '@shared/api/auth.api';
 import { taskApi } from '@shared/api/task.api';
 import { format } from 'date-fns';
@@ -44,6 +45,7 @@ const CalendarPage: React.FC = () => {
     silentRefetch,
   } = useTaskStore();
   const { user, clearAuth } = useAuthStore();
+  const loadOptions = useOptionsStore((s) => s.loadOptions);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'view' | 'copy'>('create');
@@ -64,6 +66,7 @@ const CalendarPage: React.FC = () => {
 
   useEffect(() => {
     fetchTasks();
+    loadOptions();
   }, []);
 
   useEffect(() => {

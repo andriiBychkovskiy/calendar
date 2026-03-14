@@ -7,6 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import authRoutes from './routes/auth.routes';
 import taskRoutes from './routes/task.routes';
+import optionsRoutes from './routes/options.routes';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use(cookieParser());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/options', optionsRoutes);
 
 app.get('/api/health', (_req, res) => {
   const dbState = mongoose.connection.readyState;
