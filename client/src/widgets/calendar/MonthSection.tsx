@@ -8,6 +8,8 @@ interface MonthSectionProps {
   year: number;
   month: number;
   progressMap: ProgressMap;
+  hasEntriesMap: Record<string, boolean>;
+  expensesMap: Record<string, number>;
   onAddTask: (date: Date) => void;
   onDayView: (date: Date) => void;
   onDeleteDay: (date: Date) => void;
@@ -18,6 +20,8 @@ export const MonthSection: React.FC<MonthSectionProps> = ({
   year,
   month,
   progressMap,
+  hasEntriesMap,
+  expensesMap,
   onAddTask,
   onDayView,
   onDeleteDay,
@@ -48,6 +52,8 @@ export const MonthSection: React.FC<MonthSectionProps> = ({
         year={year}
         month={month}
         progressMap={progressMap}
+        hasEntriesMap={hasEntriesMap}
+        expensesMap={expensesMap}
         onAddTask={onAddTask}
         onDayView={onDayView}
         onDeleteDay={onDeleteDay}

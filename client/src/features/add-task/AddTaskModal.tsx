@@ -1,28 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Box, TextField, Typography, Button, IconButton,
-  Checkbox, CircularProgress,
+  Box, Typography, Button, IconButton, CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
-import CheckBoxOutlinedIcon from '@mui/icons-material/CheckBoxOutlined';
 import { format } from 'date-fns';
 import { taskApi } from '@shared/api/task.api';
 import { useTaskStore } from '@entities/task/store';
-import type { ChecklistItem, Task } from '@shared/types';
+import { useOptionsStore } from '@entities/options/store';
+import type { ChecklistItem } from '@shared/types';
 import { InlineDatePicker } from './InlineDatePicker';
-
-// ─── Utilities ────────────────────────────────────────────────────────────────
+import { TasksAccordion } from './TasksAccordion';
+import { ExpansesAccordion } from './ExpansesAccordion';
+import { ItemSelectionDialog } from './ItemSelectionDialog';
 
 const toDateUTC = (date: Date): string => `${format(date, 'yyyy-MM-dd')}T12:00:00.000Z`;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type ModalMode = 'create' | 'view' | 'copy';
-type DraftItem = Omit<ChecklistItem, '_id'>;
 
 export interface AddTaskModalProps {
   open: boolean;
@@ -31,203 +26,165 @@ export interface AddTaskModalProps {
   mode?: ModalMode;
 }
 
-// ─── Shared sx constants (defined outside to avoid per-render recreation) ─────
-
 const SX = {
-  deleteBtn:   { color: 'primary.main', '&:hover': { opacity: 0.7 } },
-  deleteBtnIcon: { fontSize: 16 },
-  addItemBtn:  { color: 'primary.main', fontWeight: 500, px: 0.5, mb: 1, '&:hover': { background: 'transparent', opacity: 0.8 } },
-  actions:     { px: 3, pb: 3, pt: 2, gap: 1 },
-  closeBtn:    { flex: 1, py: 1, borderColor: 'divider', color: 'text.primary' },
-  primaryBtn:  { flex: 1, py: 1 },
-  textInput:   { fontSize: '0.875rem', '& input::placeholder': { color: '#94A3B8' } },
   pickerDropdown: {
     position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 10,
     background: '#fff', border: '1px solid', borderColor: 'divider',
     borderRadius: 2, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
   },
+  actions: { px: 3, pb: 3, pt: 2, gap: 1 },
+  closeBtn: { flex: 1, py: 1, borderColor: 'divider', color: 'text.primary' },
+  primaryBtn: { flex: 1, py: 1 },
 } as const;
-
-// ─── DatePickerField sub-component ────────────────────────────────────────────
-
-interface DatePickerFieldProps {
-  value: Date;
-  open: boolean;
-  onToggle: () => void;
-  onChange: (date: Date) => void;
-}
-
-const DatePickerField: React.FC<DatePickerFieldProps> = ({ value, open, onToggle, onChange }) => (
-  <Box sx={{ position: 'relative', mb: 2.5 }}>
-    <Box
-      onClick={onToggle}
-      sx={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        border: '1px solid', borderColor: open ? 'primary.main' : 'divider',
-        borderRadius: 2, px: 1.5, py: 1,
-        cursor: 'pointer', background: '#fff', userSelect: 'none',
-        '&:hover': { borderColor: '#CBD5E1' },
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <CalendarTodayOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-        <Typography variant="body2" sx={{ color: 'text.primary' }}>
-          {format(value, 'MMMM d, yyyy')}
-        </Typography>
-      </Box>
-      <Box sx={{ width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'text.secondary' }}>
-        <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
-          <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </Box>
-    </Box>
-    {open && (
-      <Box sx={SX.pickerDropdown}>
-        <InlineDatePicker value={value} onChange={onChange} />
-      </Box>
-    )}
-  </Box>
-);
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defaultDate, mode = 'create' }) => {
   const addTask       = useTaskStore((s) => s.addTask);
   const patchTask     = useTaskStore((s) => s.patchTask);
   const silentRefetch = useTaskStore((s) => s.silentRefetch);
   const allTasks      = useTaskStore((s) => s.tasks);
+  const { taskOptions, expansesOptions } = useOptionsStore();
 
-  const [internalMode, setInternalMode] = useState<ModalMode>(mode);
-  const [dueDate, setDueDate]           = useState<Date>(defaultDate ?? new Date());
-  const [checklist, setChecklist]       = useState<DraftItem[]>([{ text: '', completed: false }]);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [loading, setLoading]   = useState(false);
-  const [applying, setApplying] = useState(false);
-  const [error, setError]       = useState('');
+  const [dueDate, setDueDate]         = useState<Date>(defaultDate ?? new Date());
+  const [taskItems, setTaskItems]     = useState<ChecklistItem[]>([]);
+  const [expanseItems, setExpanseItems] = useState<ChecklistItem[]>([]);
+  const [primaryTaskId, setPrimaryTaskId] = useState<string | null>(null);
+  const [extraTaskIds, setExtraTaskIds]   = useState<string[]>([]);
+  const [isDirty, setIsDirty]             = useState(false);
 
-  const [localTasks, setLocalTasks]       = useState<Task[]>([]);
-  const [dirtyTaskIds, setDirtyTaskIds]   = useState<Set<string>>(new Set());
-  const [newItems, setNewItems]           = useState<DraftItem[]>([]);
+  const [showDatePicker, setShowDatePicker]     = useState(false);
+  const [applying, setApplying]                 = useState(false);
+  const [loading, setLoading]                   = useState(false);
+  const [error, setError]                       = useState('');
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [deleting, setDeleting]           = useState(false);
+  const [deleting, setDeleting]                 = useState(false);
+  // null = closed, 'task'/'expanse' = open for that type
+  const [selectionOpen, setSelectionOpen] = useState<'task' | 'expanse' | null>(null);
 
   useEffect(() => {
     if (!open) return;
 
-    const dateKey = defaultDate ? format(defaultDate, 'yyyy-MM-dd') : null;
-
-    setInternalMode(mode);
-    setDueDate(() => {
-      if (mode === 'copy') {
-        const next = new Date(defaultDate ?? new Date());
-        next.setDate(next.getDate() + 1);
-        return next;
-      }
-      return defaultDate ?? new Date();
-    });
-    setChecklist([{ text: '', completed: false }]);
     setShowDatePicker(false);
     setError('');
-    setLocalTasks(allTasks.filter((t) => t.dueDate.split('T')[0] === dateKey));
-    setDirtyTaskIds(new Set());
-    setNewItems([]);
-  // allTasks intentionally excluded — snapshot once on open
+
+    const dateKey = defaultDate ? format(defaultDate, 'yyyy-MM-dd') : '';
+    const dayTasks = allTasks.filter((t) => t.dueDate.split('T')[0] === dateKey);
+    const mergedChecklist = dayTasks.flatMap((t) => t.checklist);
+
+    if (mode === 'copy') {
+      setTaskItems(mergedChecklist.filter((i) => i.type !== 'expanse').map((i) => ({ ...i, completed: false })));
+      setExpanseItems([]);
+      const next = new Date(defaultDate ?? new Date());
+      next.setDate(next.getDate() + 1);
+      setDueDate(next);
+      setPrimaryTaskId(null);
+      setExtraTaskIds([]);
+    } else if (mode === 'view') {
+      setTaskItems(mergedChecklist.filter((i) => i.type !== 'expanse'));
+      setExpanseItems(mergedChecklist.filter((i) => i.type === 'expanse'));
+      setPrimaryTaskId(dayTasks[0]?._id ?? null);
+      setExtraTaskIds(dayTasks.slice(1).map((t) => t._id));
+      setDueDate(defaultDate ?? new Date());
+    } else {
+      setTaskItems([]);
+      setExpanseItems([]);
+      setDueDate(defaultDate ?? new Date());
+      setPrimaryTaskId(null);
+      setExtraTaskIds([]);
+    }
+    setIsDirty(false);
+  // allTasks snapshot on open only
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultDate, mode]);
 
-  // ─── Local-task helpers ───────────────────────────────────────────────────
+  // ─── Task helpers ──────────────────────────────────────────────────────────
 
-  const updateLocalTask = (taskId: string, updater: (cl: ChecklistItem[]) => ChecklistItem[]) =>
-    setLocalTasks((prev) =>
-      prev.map((t) => (t._id !== taskId ? t : { ...t, checklist: updater(t.checklist) }))
-    );
-
-  const markDirty = (taskId: string) =>
-    setDirtyTaskIds((prev) => new Set(prev).add(taskId));
-
-  const handleToggleItem = (taskId: string, idx: number) => {
-    updateLocalTask(taskId, (cl) => cl.map((item, i) => (i === idx ? { ...item, completed: !item.completed } : item)));
-    markDirty(taskId);
+  const toggleTask = (idx: number) => {
+    setTaskItems((prev) => prev.map((item, i) => (i === idx ? { ...item, completed: !item.completed } : item)));
+    setIsDirty(true);
   };
 
-  const handleRemoveExistingItem = (taskId: string, idx: number) => {
-    updateLocalTask(taskId, (cl) => cl.filter((_, i) => i !== idx));
-    markDirty(taskId);
+  const removeTask = (idx: number) => {
+    setTaskItems((prev) => prev.filter((_, i) => i !== idx));
+    setIsDirty(true);
   };
 
-  const handleEditExistingItem = (taskId: string, idx: number, text: string) =>
-    updateLocalTask(taskId, (cl) => cl.map((item, i) => (i === idx ? { ...item, text } : item)));
+  const addTasksFromOptions = (selected: Array<{ id: string; value: string }>) => {
+    setTaskItems((prev) => [
+      ...prev,
+      ...selected.map((opt) => ({ text: opt.value, completed: false, type: 'task' as const, optionId: opt.id })),
+    ]);
+    setIsDirty(true);
+  };
 
-  // ─── New-item helpers ─────────────────────────────────────────────────────
+  // ─── Expanse helpers ───────────────────────────────────────────────────────
 
-  const updateNewItem = (index: number, patch: Partial<DraftItem>) =>
-    setNewItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)));
+  const updateExpanseAmount = (idx: number, amount: number | undefined) => {
+    setExpanseItems((prev) => prev.map((item, i) => (i === idx ? { ...item, amount } : item)));
+    setIsDirty(true);
+  };
 
-  const removeNewItem = (index: number) =>
-    setNewItems((prev) => prev.filter((_, i) => i !== index));
+  const removeExpanse = (idx: number) => {
+    setExpanseItems((prev) => prev.filter((_, i) => i !== idx));
+    setIsDirty(true);
+  };
 
-  const addNewItem = () =>
-    setNewItems((prev) => [...prev, { text: '', completed: false }]);
+  const addExpansesFromOptions = (selected: Array<{ id: string; value: string }>) => {
+    setExpanseItems((prev) => [
+      ...prev,
+      ...selected.map((opt) => ({ text: opt.value, completed: false, type: 'expanse' as const, optionId: opt.id })),
+    ]);
+    setIsDirty(true);
+  };
 
-  // ─── API handlers ─────────────────────────────────────────────────────────
+  // ─── API handlers ──────────────────────────────────────────────────────────
+
+  const handleSubmit = async () => {
+    const fullChecklist = [...taskItems, ...expanseItems];
+    if (fullChecklist.length === 0) {
+      setError('Select at least one task or expanse.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      const created = await taskApi.createTask({ dueDate: toDateUTC(dueDate), checklist: fullChecklist });
+      addTask(created);
+      onClose();
+    } catch {
+      setError('Failed to create. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleApply = async () => {
     setApplying(true);
     try {
-      const dirty       = localTasks.filter((t) => dirtyTaskIds.has(t._id));
-      const filledItems = newItems.filter((item) => item.text.trim() !== '');
-
-      await Promise.all([
-        ...dirty.map(async (task) => {
-          const updated = await taskApi.updateTask(task._id, { checklist: task.checklist });
-          patchTask(updated);
-        }),
-        ...filledItems.map(async (item) => {
-          const created = await taskApi.createTask({
-            dueDate: toDateUTC(defaultDate ?? new Date()),
-            checklist: [{ text: item.text.trim(), completed: item.completed }],
-          });
-          addTask(created);
-        }),
-      ]);
+      const fullChecklist = [...taskItems, ...expanseItems];
+      if (primaryTaskId) {
+        const updated = await taskApi.updateTask(primaryTaskId, { checklist: fullChecklist });
+        patchTask(updated);
+        if (extraTaskIds.length > 0) {
+          await Promise.all(extraTaskIds.map((id) => taskApi.deleteTask(id)));
+          await silentRefetch();
+        }
+      } else if (fullChecklist.length > 0) {
+        const created = await taskApi.createTask({ dueDate: toDateUTC(defaultDate ?? new Date()), checklist: fullChecklist });
+        addTask(created);
+      }
       onClose();
     } finally {
       setApplying(false);
     }
   };
 
-  const handleSubmit = async () => {
-    const filled = checklist.filter((item) => item.text.trim() !== '');
-    if (filled.length === 0) {
-      setError('Add at least one checklist item');
-      return;
-    }
-    setError('');
-    setLoading(true);
-    try {
-      const task = await taskApi.createTask({ dueDate: toDateUTC(dueDate), checklist: filled });
-      addTask(task);
-      onClose();
-    } catch {
-      setError('Failed to create task. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleCopyList = async () => {
     setApplying(true);
     try {
-      const allItems = [
-        ...localTasks.flatMap((t) => t.checklist),
-        ...newItems,
-      ].filter((item) => item.text.trim() !== '');
-
-      if (allItems.length > 0) {
-        const created = await taskApi.createTask({
-          dueDate: toDateUTC(dueDate),
-          checklist: allItems.map((i) => ({ text: i.text.trim(), completed: false })),
-        });
+      if (taskItems.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const checklist = taskItems.map(({ _id, ...rest }) => ({ ...rest, completed: false }));
+        const created = await taskApi.createTask({ dueDate: toDateUTC(dueDate), checklist });
         addTask(created);
       }
       onClose();
@@ -239,7 +196,8 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
   const handleDeleteList = async () => {
     setDeleting(true);
     try {
-      await Promise.all(localTasks.map((t) => taskApi.deleteTask(t._id)));
+      const allIds = [primaryTaskId, ...extraTaskIds].filter(Boolean) as string[];
+      await Promise.all(allIds.map((id) => taskApi.deleteTask(id)));
       await silentRefetch();
       setConfirmDeleteOpen(false);
       onClose();
@@ -248,251 +206,158 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
     }
   };
 
-  // ─── Derived values ───────────────────────────────────────────────────────
+  // ─── Derived ───────────────────────────────────────────────────────────────
 
-  const handleDateChange = (date: Date) => { setDueDate(date); setShowDatePicker(false); };
-  const toggleDatePicker = () => setShowDatePicker((v) => !v);
+  // Tasks can only be added once per option; expanses can be added multiple times
+  const selectedTaskOptionIds = new Set(taskItems.map((i) => i.optionId).filter(Boolean) as string[]);
+
+  const taskGroups = taskOptions.groups.map((g) => ({
+    id: g.id, title: g.title,
+    items: g.tasks.map((t) => ({ id: t.id, value: t.value })),
+  }));
+
+  const expanseGroups = expansesOptions.groups.map((g) => ({
+    id: g.id, title: g.title,
+    items: g.expanses.map((e) => ({ id: e.id, value: e.value })),
+  }));
 
   const modalTitle =
-    internalMode === 'view' && defaultDate ? format(defaultDate, 'MMMM d, yyyy') :
-    internalMode === 'copy'                ? 'Copy Task list' :
+    mode === 'view' && defaultDate ? format(defaultDate, 'MMMM d, yyyy') :
+    mode === 'copy'               ? 'Copy Task list' :
     'Add Task';
 
-  const applyIsDisabled =
-    (dirtyTaskIds.size === 0 && newItems.every((it) => !it.text.trim())) || applying;
+  // ─── Date picker field ─────────────────────────────────────────────────────
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  const DateField = (
+    <Box sx={{ position: 'relative', mb: 2 }}>
+      <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.75, display: 'block', fontWeight: 500 }}>
+        Due date
+      </Typography>
+      <Box
+        onClick={() => setShowDatePicker((v) => !v)}
+        sx={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          border: '1px solid', borderColor: showDatePicker ? 'primary.main' : 'divider',
+          borderRadius: 2, px: 1.5, py: 1, cursor: 'pointer', userSelect: 'none',
+          '&:hover': { borderColor: '#CBD5E1' },
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CalendarTodayOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+          <Typography variant="body2">{format(dueDate, 'MMMM d, yyyy')}</Typography>
+        </Box>
+        <Box sx={{ color: 'text.secondary' }}>
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+            <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Box>
+      </Box>
+      {showDatePicker && (
+        <Box sx={SX.pickerDropdown}>
+          <InlineDatePicker value={dueDate} onChange={(d) => { setDueDate(d); setShowDatePicker(false); }} />
+        </Box>
+      )}
+    </Box>
+  );
+
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3, overflow: 'visible' } }}>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-        {modalTitle}
-        <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3, overflow: 'visible' } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+          {modalTitle}
+          <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
 
-      {/* ── Copy mode ──────────────────────────────────────────────────────── */}
-      {internalMode === 'copy' ? (
-        <>
-          <DialogContent sx={{ pt: 1, pb: showDatePicker ? '240px' : 0, px: 3, overflow: 'visible', transition: 'padding-bottom 0.2s' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.75, display: 'block', fontWeight: 500 }}>
-              Due date
+        <DialogContent sx={{ pt: 1, pb: 0, px: 3, overflow: 'visible', ...(showDatePicker && { pb: '240px', transition: 'padding-bottom 0.2s' }) }}>
+          {(mode === 'create' || mode === 'copy') && DateField}
+
+          <TasksAccordion
+            mode={mode}
+            items={taskItems}
+            onToggle={mode === 'view' ? toggleTask : undefined}
+            onRemove={removeTask}
+            onAddClick={() => setSelectionOpen('task')}
+          />
+
+          {mode !== 'copy' && (
+            <ExpansesAccordion
+              mode={mode}
+              items={expanseItems}
+              onUpdateAmount={updateExpanseAmount}
+              onRemove={removeExpanse}
+              onAddClick={() => setSelectionOpen('expanse')}
+            />
+          )}
+
+          {error && (
+            <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
+              {error}
             </Typography>
+          )}
+        </DialogContent>
 
-            <DatePickerField value={dueDate} open={showDatePicker} onToggle={toggleDatePicker} onChange={handleDateChange} />
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1 }}>
-              {localTasks.map((task) =>
-                task.checklist.map((item, idx) => (
-                  <Box key={`${task._id}-${idx}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Checkbox checked={false} size="small" sx={{ flexShrink: 0 }} disabled />
-                    <TextField
-                      placeholder="Task"
-                      value={item.text}
-                      onChange={(e) => handleEditExistingItem(task._id, idx, e.target.value)}
-                      fullWidth variant="standard"
-                      InputProps={{ disableUnderline: true, sx: SX.textInput }}
-                    />
-                    <IconButton size="small" onClick={() => handleRemoveExistingItem(task._id, idx)} sx={SX.deleteBtn}>
-                      <DeleteOutlineIcon sx={SX.deleteBtnIcon} />
-                    </IconButton>
-                  </Box>
-                ))
-              )}
-              {newItems.map((item, index) => (
-                <Box key={`new-${index}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Checkbox checked={false} size="small" sx={{ flexShrink: 0 }} disabled />
-                  <TextField
-                    placeholder="Task"
-                    value={item.text}
-                    onChange={(e) => updateNewItem(index, { text: e.target.value })}
-                    fullWidth variant="standard"
-                    InputProps={{ disableUnderline: true, sx: SX.textInput }}
-                  />
-                  <IconButton size="small" onClick={() => removeNewItem(index)} sx={SX.deleteBtn}>
-                    <DeleteOutlineIcon sx={SX.deleteBtnIcon} />
-                  </IconButton>
-                </Box>
-              ))}
-            </Box>
-
-            <Button startIcon={<AddIcon sx={{ fontSize: 16 }} />} onClick={addNewItem} size="small" sx={SX.addItemBtn}>
-              Add item
-            </Button>
-          </DialogContent>
-
-          <DialogActions sx={SX.actions}>
-            <Button variant="outlined" onClick={onClose} sx={SX.closeBtn}>Cancel</Button>
-            <Button variant="contained" onClick={handleCopyList} disabled={applying} sx={SX.primaryBtn}>
-              {applying ? <CircularProgress size={18} color="inherit" /> : 'Copy list'}
-            </Button>
-          </DialogActions>
-        </>
-
-      /* ── View mode ───────────────────────────────────────────────────────── */
-      ) : internalMode === 'view' ? (
-        <>
-          <DialogContent sx={{ pt: 1, pb: 0, px: 3 }}>
-            {localTasks.length > 0 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, mb: 2 }}>
-                {localTasks.map((task) => (
-                  <Box key={task._id}>
-                    {task.checklist.map((item, idx) => (
-                      <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Checkbox checked={item.completed} onChange={() => handleToggleItem(task._id, idx)} size="small" sx={{ flexShrink: 0 }} />
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            flex: 1, fontSize: '0.875rem',
-                            color: item.completed ? 'text.disabled' : 'text.primary',
-                            textDecoration: item.completed ? 'line-through' : 'none',
-                          }}
-                        >
-                          {item.text}
-                        </Typography>
-                        <IconButton size="small" onClick={() => handleRemoveExistingItem(task._id, idx)} sx={SX.deleteBtn}>
-                          <DeleteOutlineIcon sx={SX.deleteBtnIcon} />
-                        </IconButton>
-                      </Box>
-                    ))}
-                  </Box>
-                ))}
-              </Box>
-            )}
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1 }}>
-              {newItems.map((item, index) => (
-                <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Checkbox
-                    checked={item.completed}
-                    onChange={() => updateNewItem(index, { completed: !item.completed })}
-                    size="small" sx={{ flexShrink: 0 }}
-                  />
-                  <TextField
-                    placeholder="Task"
-                    value={item.text}
-                    onChange={(e) => updateNewItem(index, { text: e.target.value })}
-                    fullWidth variant="standard"
-                    InputProps={{
-                      disableUnderline: true,
-                      sx: {
-                        ...SX.textInput,
-                        color: item.completed ? 'text.disabled' : 'text.primary',
-                        textDecoration: item.completed ? 'line-through' : 'none',
-                      },
-                    }}
-                  />
-                  <IconButton size="small" onClick={() => removeNewItem(index)} sx={SX.deleteBtn}>
-                    <DeleteOutlineIcon sx={SX.deleteBtnIcon} />
-                  </IconButton>
-                </Box>
-              ))}
-            </Box>
-
-            <Button startIcon={<AddIcon sx={{ fontSize: 16 }} />} onClick={addNewItem} size="small" sx={SX.addItemBtn}>
-              Add item
-            </Button>
-          </DialogContent>
-
-          <DialogActions sx={SX.actions}>
-            <Button variant="outlined" onClick={onClose} sx={SX.closeBtn}>Close</Button>
-            <Button
-              variant="outlined"
-              onClick={() => setConfirmDeleteOpen(true)}
-              disabled={localTasks.length === 0}
-              sx={{ flex: 1, py: 1, borderColor: 'error.light', color: 'error.main', '&:hover': { background: 'rgba(211,47,47,0.04)', borderColor: 'error.main' } }}
-            >
-              Delete
-            </Button>
-            <Button variant="contained" onClick={handleApply} disabled={applyIsDisabled} sx={SX.primaryBtn}>
-              {applying ? <CircularProgress size={18} color="inherit" /> : 'Apply'}
-            </Button>
-          </DialogActions>
-
-          <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-            <DialogTitle sx={{ pb: 1 }}>Delete Task list?</DialogTitle>
-            <DialogContent>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Are you sure you want to delete the Task list? This action cannot be undone.
-              </Typography>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1 }}>
-              <Button variant="outlined" onClick={() => setConfirmDeleteOpen(false)} sx={SX.closeBtn}>Close</Button>
-              <Button variant="contained" color="error" onClick={handleDeleteList} disabled={deleting} sx={SX.primaryBtn}>
-                {deleting ? <CircularProgress size={18} color="inherit" /> : 'Delete'}
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </>
-
-      /* ── Create mode ─────────────────────────────────────────────────────── */
-      ) : (
-        <>
-          <DialogContent sx={{ pt: 1, pb: showDatePicker ? '240px' : 0, px: 3, overflow: 'visible', transition: 'padding-bottom 0.2s' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.75, display: 'block', fontWeight: 500 }}>
-              Due date
-            </Typography>
-
-            <DatePickerField value={dueDate} open={showDatePicker} onToggle={toggleDatePicker} onChange={handleDateChange} />
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-              <CheckBoxOutlinedIcon sx={{ fontSize: 18, color: 'text.primary' }} />
-              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>Checklist</Typography>
-            </Box>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1 }}>
-              {checklist.map((item, index) => (
-                <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Checkbox
-                    checked={item.completed}
-                    onChange={() => setChecklist((prev) => prev.map((it, i) => (i === index ? { ...it, completed: !it.completed } : it)))}
-                    size="small" sx={{ flexShrink: 0 }}
-                  />
-                  <TextField
-                    placeholder="Task"
-                    value={item.text}
-                    onChange={(e) => setChecklist((prev) => prev.map((it, i) => (i === index ? { ...it, text: e.target.value } : it)))}
-                    fullWidth variant="standard"
-                    InputProps={{
-                      disableUnderline: true,
-                      sx: {
-                        ...SX.textInput,
-                        color: item.completed ? 'text.disabled' : 'text.primary',
-                        textDecoration: item.completed ? 'line-through' : 'none',
-                      },
-                    }}
-                  />
-                  <IconButton size="small" onClick={() => setChecklist((prev) => prev.filter((_, i) => i !== index))} sx={SX.deleteBtn}>
-                    <DeleteOutlineIcon sx={SX.deleteBtnIcon} />
-                  </IconButton>
-                </Box>
-              ))}
-            </Box>
-
-            <Button
-              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-              onClick={() => setChecklist((prev) => [...prev, { text: '', completed: false }])}
-              size="small" sx={SX.addItemBtn}
-            >
-              Add item
-            </Button>
-
-            {error && (
-              <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
-                {error}
-              </Typography>
-            )}
-          </DialogContent>
-
+        {mode === 'create' && (
           <DialogActions sx={SX.actions}>
             <Button variant="outlined" onClick={onClose} sx={SX.closeBtn}>Cancel</Button>
             <Button variant="contained" onClick={handleSubmit} disabled={loading} sx={SX.primaryBtn}>
               {loading ? <CircularProgress size={18} color="inherit" /> : 'Add Task'}
             </Button>
           </DialogActions>
-        </>
-      )}
-    </Dialog>
+        )}
+
+        {mode === 'copy' && (
+          <DialogActions sx={SX.actions}>
+            <Button variant="outlined" onClick={onClose} sx={SX.closeBtn}>Cancel</Button>
+            <Button variant="contained" onClick={handleCopyList} disabled={applying || taskItems.length === 0} sx={SX.primaryBtn}>
+              {applying ? <CircularProgress size={18} color="inherit" /> : 'Copy list'}
+            </Button>
+          </DialogActions>
+        )}
+
+        {mode === 'view' && (
+          <DialogActions sx={SX.actions}>
+            <Button variant="outlined" onClick={onClose} sx={SX.closeBtn}>Close</Button>
+            <Button
+              variant="outlined"
+              onClick={() => setConfirmDeleteOpen(true)}
+              sx={{ flex: 1, py: 1, borderColor: 'error.light', color: 'error.main', '&:hover': { background: 'rgba(211,47,47,0.04)', borderColor: 'error.main' } }}
+            >
+              Delete
+            </Button>
+            <Button variant="contained" onClick={handleApply} disabled={!isDirty || applying} sx={SX.primaryBtn}>
+              {applying ? <CircularProgress size={18} color="inherit" /> : 'Apply'}
+            </Button>
+          </DialogActions>
+        )}
+      </Dialog>
+
+      <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ pb: 1 }}>Delete Task list?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Are you sure you want to delete this day's list? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1 }}>
+          <Button variant="outlined" onClick={() => setConfirmDeleteOpen(false)} sx={SX.closeBtn}>Close</Button>
+          <Button variant="contained" color="error" onClick={handleDeleteList} disabled={deleting} sx={SX.primaryBtn}>
+            {deleting ? <CircularProgress size={18} color="inherit" /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <ItemSelectionDialog
+        open={selectionOpen !== null}
+        onClose={() => setSelectionOpen(null)}
+        title={selectionOpen === 'task' ? 'Select tasks' : 'Select expanses'}
+        groups={selectionOpen === 'task' ? taskGroups : expanseGroups}
+        alreadySelectedIds={selectionOpen === 'task' ? selectedTaskOptionIds : new Set()}
+        onConfirm={selectionOpen === 'task' ? addTasksFromOptions : addExpansesFromOptions}
+      />
+    </>
   );
 };
