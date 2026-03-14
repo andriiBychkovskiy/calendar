@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Alert,
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { CalendarHeader } from '@widgets/calendar/CalendarHeader';
@@ -36,6 +37,7 @@ const CalendarPage: React.FC = () => {
     expensesMap,
     loading,
     loadingMore,
+    error,
     tasks,
     fetchTasks,
     appendNextMonth,
@@ -272,6 +274,19 @@ const CalendarPage: React.FC = () => {
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
                 <CircularProgress size={32} sx={{ color: 'primary.main' }} />
+              </Box>
+            ) : error ? (
+              <Box sx={{ p: 4 }}>
+                <Alert
+                  severity="error"
+                  action={
+                    <Button color="inherit" size="small" onClick={fetchTasks}>
+                      Retry
+                    </Button>
+                  }
+                >
+                  {error}
+                </Alert>
               </Box>
             ) : (
               <>

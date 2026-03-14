@@ -1,46 +1,46 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import { Task } from '../models/Task.model';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 export const getTasks = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { year, month } = req.query;
-    const userId = req.userId;
-
-    let filter: Record<string, unknown> = { userId };
+    const filter: Record<string, unknown> = { userId: req.userId };
 
     if (year && month) {
       const y = parseInt(year as string, 10);
       const m = parseInt(month as string, 10) - 1;
-      const start = new Date(y, m, 1);
-      const end = new Date(y, m + 1, 0, 23, 59, 59, 999);
-      filter.dueDate = { $gte: start, $lte: end };
+      if (isNaN(y) || isNaN(m)) {
+        res.status(400).json({ message: 'year and month must be valid numbers' });
+        return;
+      }
+      filter.dueDate = {
+        $gte: new Date(y, m, 1),
+        $lte: new Date(y, m + 1, 0, 23, 59, 59, 999),
+      };
     }
 
     const tasks = await Task.find(filter).sort({ dueDate: 1 });
     res.json(tasks);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err });
+    console.error('[getTasks]', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
 export const createTask = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { dueDate, checklist } = req.body;
-    if (!dueDate) {
-      res.status(400).json({ message: 'dueDate is required' });
-      return;
-    }
-
     const task = await Task.create({
       userId: req.userId,
       dueDate: new Date(dueDate),
-      checklist: checklist || [],
+      checklist,
     });
-
     res.status(201).json(task);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err });
+    console.error('[createTask]', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -59,7 +59,8 @@ export const updateTask = async (req: AuthRequest, res: Response): Promise<void>
     await task.save();
     res.json(task);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err });
+    console.error('[updateTask]', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -72,7 +73,8 @@ export const deleteTask = async (req: AuthRequest, res: Response): Promise<void>
     }
     res.json({ message: 'Task deleted' });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err });
+    console.error('[deleteTask]', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -86,37 +88,48 @@ export const getDailyProgress = async (req: AuthRequest, res: Response): Promise
 
     const y = parseInt(year as string, 10);
     const m = parseInt(month as string, 10) - 1;
+    if (isNaN(y) || isNaN(m)) {
+      res.status(400).json({ message: 'year and month must be valid numbers' });
+      return;
+    }
     const start = new Date(y, m, 1);
     const end = new Date(y, m + 1, 0, 23, 59, 59, 999);
 
-    const tasks = await Task.find({
-      userId: req.userId,
-      dueDate: { $gte: start, $lte: end },
-    });
-
-    const progressMap: Record<string, { total: number; completed: number }> = {};
-
-    for (const task of tasks) {
-      const dateKey = task.dueDate.toISOString().split('T')[0];
-      if (!progressMap[dateKey]) {
-        progressMap[dateKey] = { total: 0, completed: 0 };
-      }
-      const taskItems = task.checklist.filter((c) => c.type !== 'expanse');
-      if (taskItems.length > 0) {
-        progressMap[dateKey].total += taskItems.length;
-        progressMap[dateKey].completed += taskItems.filter((c) => c.completed).length;
-      }
-    }
+    const rows = await Task.aggregate<{ date: string; percentage: number }>([
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(req.userId),
+          dueDate: { $gte: start, $lte: end },
+        },
+      },
+      { $unwind: '$checklist' },
+      { $match: { 'checklist.type': { $ne: 'expanse' } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$dueDate' } },
+          total: { $sum: 1 },
+          completed: { $sum: { $cond: ['$checklist.completed', 1, 0] } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          date: '$_id',
+          percentage: {
+            $round: [{ $multiply: [{ $divide: ['$completed', '$total'] }, 100] }, 0],
+          },
+        },
+      },
+    ]);
 
     const result: Record<string, number> = {};
-    for (const [date, { total, completed }] of Object.entries(progressMap)) {
-      if (total > 0) {
-        result[date] = Math.round((completed / total) * 100);
-      }
+    for (const { date, percentage } of rows) {
+      result[date] = percentage;
     }
 
     res.json(result);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err });
+    console.error('[getDailyProgress]', err);
+    res.status(500).json({ message: 'Server error' });
   }
 };
