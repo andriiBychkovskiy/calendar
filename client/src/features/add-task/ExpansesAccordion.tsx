@@ -31,7 +31,7 @@ export const ExpansesAccordion: React.FC<ExpansesAccordionProps> = ({
   return (
     <Accordion defaultExpanded={false} disableGutters elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px !important', mb: 1.5, '&::before': { display: 'none' } }}>
       <AccordionSummary
-        expandIcon={<ExpandMoreIcon sx={{ fontSize: 18 }} />}
+        expandIcon={<ExpandMoreIcon sx={{ fontSize: 36 }} />}
         sx={{ minHeight: 44, px: 2, '& .MuiAccordionSummary-content': { my: 0.75 } }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
@@ -50,7 +50,7 @@ export const ExpansesAccordion: React.FC<ExpansesAccordionProps> = ({
       <AccordionDetails sx={{ pt: 0, pb: 1.5, px: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           {items.map((item, idx) => (
-            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box key={item._id ?? idx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography
                 variant="body2"
                 sx={{ flex: 1, fontSize: '0.875rem', color: 'text.primary' }}
@@ -78,7 +78,7 @@ export const ExpansesAccordion: React.FC<ExpansesAccordionProps> = ({
               <IconButton
                 size="small"
                 onClick={() => onRemove(idx)}
-                sx={{ color: 'primary.main', flexShrink: 0, '&:hover': { opacity: 0.7, background: 'transparent' } }}
+                sx={{ color: 'error.main', flexShrink: 0, '&:hover': { opacity: 0.7, background: 'transparent' } }}
               >
                 <DeleteOutlineIcon sx={{ fontSize: 15 }} />
               </IconButton>

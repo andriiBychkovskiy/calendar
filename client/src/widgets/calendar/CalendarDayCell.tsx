@@ -108,7 +108,7 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
             opacity: { xs: 1, sm: 0 },
             width: 20,
             height: 20,
-            color: 'primary.main',
+            color: 'error.main',
             transition: 'opacity 0.15s',
             '&:hover': { opacity: 0.7, background: 'transparent' },
           }}

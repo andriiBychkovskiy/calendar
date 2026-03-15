@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
-  Box, Typography, IconButton, TextField, Button,
+  Box, Typography, IconButton, TextField, Button, Tooltip,
   Accordion, AccordionSummary, AccordionDetails, Collapse,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -44,6 +45,21 @@ export const OptionsSection: React.FC<OptionsSectionProps> = ({
   const [newItemValues, setNewItemValues] = useState<Record<string, string>>({});
   const [editingItem, setEditingItem] = useState<{ groupId: string; itemId: string } | null>(null);
   const [editingItemValue, setEditingItemValue] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<
+    | { type: 'group'; groupId: string }
+    | { type: 'item'; groupId: string; itemId: string }
+    | null
+  >(null);
+
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.type === 'group') {
+      onRemoveGroup(pendingDelete.groupId);
+    } else {
+      onRemoveItem(pendingDelete.groupId, pendingDelete.itemId);
+    }
+    setPendingDelete(null);
+  };
 
   const handleAddGroup = () => {
     if (!newGroupTitle.trim()) return;
@@ -60,6 +76,7 @@ export const OptionsSection: React.FC<OptionsSectionProps> = ({
   const handleSaveEditGroup = (groupId: string) => {
     if (editingGroupTitle.trim()) onUpdateGroup(groupId, editingGroupTitle.trim());
     setEditingGroupId(null);
+    setEditingGroupTitle('');
   };
 
   const handleAddItem = (groupId: string) => {
@@ -78,6 +95,7 @@ export const OptionsSection: React.FC<OptionsSectionProps> = ({
     if (!editingItem || !editingItemValue.trim()) return;
     onUpdateItem(editingItem.groupId, editingItem.itemId, editingItemValue.trim());
     setEditingItem(null);
+    setEditingItemValue('');
   };
 
   return (
@@ -88,7 +106,7 @@ export const OptionsSection: React.FC<OptionsSectionProps> = ({
 
       {groups.map((group) => (
         <Accordion key={group.id} defaultExpanded disableGutters elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px !important', mb: 1, '&::before': { display: 'none' } }}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 18 }} />} sx={{ minHeight: 40, px: 1.5, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 36 }} />} sx={{ minHeight: 40, px: 1.5, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
             {editingGroupId === group.id ? (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flex: 1, mr: 1 }} onClick={(e) => e.stopPropagation()}>
                 <TextField
@@ -112,9 +130,18 @@ export const OptionsSection: React.FC<OptionsSectionProps> = ({
                   <IconButton size="small" onClick={() => handleStartEditGroup(group.id, group.title)} sx={{ color: 'text.secondary' }}>
                     <EditOutlinedIcon sx={{ fontSize: 14 }} />
                   </IconButton>
-                  <IconButton size="small" onClick={() => onRemoveGroup(group.id)} sx={{ color: 'error.light' }}>
-                    <DeleteOutlineIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
+                  <Tooltip title={group.items.length > 0 ? 'Remove all items before deleting the group' : ''} placement="top">
+                    <span>
+                      <IconButton
+                        size="small"
+                        onClick={() => setPendingDelete({ type: 'group', groupId: group.id })}
+                        disabled={group.items.length > 0}
+                        sx={{ color: group.items.length > 0 ? 'action.disabled' : 'error.main' }}
+                      >
+                        <DeleteOutlineIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
                 </Box>
               </Box>
             )}
@@ -145,7 +172,7 @@ export const OptionsSection: React.FC<OptionsSectionProps> = ({
                       <IconButton size="small" onClick={() => handleStartEditItem(group.id, item.id, item.value)} sx={{ color: 'text.secondary' }}>
                         <EditOutlinedIcon sx={{ fontSize: 13 }} />
                       </IconButton>
-                      <IconButton size="small" onClick={() => onRemoveItem(group.id, item.id)} sx={{ color: 'error.light' }}>
+                      <IconButton size="small" onClick={() => setPendingDelete({ type: 'item', groupId: group.id, itemId: item.id })} sx={{ color: 'error.main' }}>
                         <DeleteOutlineIcon sx={{ fontSize: 13 }} />
                       </IconButton>
                     </>
@@ -199,6 +226,42 @@ export const OptionsSection: React.FC<OptionsSectionProps> = ({
       >
         Add group
       </Button>
+
+      <Dialog
+        open={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          {pendingDelete?.type === 'group' ? 'Delete group?' : 'Delete item?'}
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            {pendingDelete?.type === 'group'
+              ? 'Are you sure you want to delete this group? This action cannot be undone.'
+              : 'Are you sure you want to delete this item? This action cannot be undone.'}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={() => setPendingDelete(null)}
+            sx={{ flex: 1, py: 1, borderColor: 'divider', color: 'text.primary' }}
+          >
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleConfirmDelete}
+            sx={{ flex: 1, py: 1 }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
