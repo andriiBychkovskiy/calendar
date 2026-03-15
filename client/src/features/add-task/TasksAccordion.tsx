@@ -26,7 +26,7 @@ export const TasksAccordion: React.FC<TasksAccordionProps> = ({
   return (
     <Accordion defaultExpanded disableGutters elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px !important', mb: 1.5, '&::before': { display: 'none' } }}>
       <AccordionSummary
-        expandIcon={<ExpandMoreIcon sx={{ fontSize: 18 }} />}
+        expandIcon={<ExpandMoreIcon sx={{ fontSize: 36 }} />}
         sx={{ minHeight: 44, px: 2, '& .MuiAccordionSummary-content': { my: 0.75 } }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -51,7 +51,7 @@ export const TasksAccordion: React.FC<TasksAccordionProps> = ({
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
           {items.map((item, idx) => (
-            <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.25 }}>
+            <Box key={item._id ?? idx} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.25 }}>
               <Checkbox
                 checked={showCheckboxes ? item.completed : false}
                 onChange={() => onToggle?.(idx)}
@@ -73,7 +73,7 @@ export const TasksAccordion: React.FC<TasksAccordionProps> = ({
               <IconButton
                 size="small"
                 onClick={() => onRemove(idx)}
-                sx={{ color: 'primary.main', flexShrink: 0, '&:hover': { opacity: 0.7, background: 'transparent' } }}
+                sx={{ color: 'error.main', flexShrink: 0, '&:hover': { opacity: 0.7, background: 'transparent' } }}
               >
                 <DeleteOutlineIcon sx={{ fontSize: 15 }} />
               </IconButton>
