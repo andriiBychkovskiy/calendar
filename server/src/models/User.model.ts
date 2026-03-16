@@ -3,8 +3,9 @@ import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
   email: string;
-  password: string;
+  password?: string;
   name: string;
+  googleId?: string;
   refreshToken?: string;
   comparePassword(candidate: string): Promise<boolean>;
 }
@@ -12,15 +13,16 @@ export interface IUser extends Document {
 const UserSchema = new Schema<IUser>(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true, minlength: 6 },
+    password: { type: String, minlength: 6 },
     name: { type: String, required: true, trim: true },
+    googleId: { type: String, sparse: true, unique: true },
     refreshToken: { type: String },
   },
   { timestamps: true }
 );
 
 UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  if (!this.password || !this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });

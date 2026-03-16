@@ -5,4 +5,5 @@ export const ROUTES = {
   CALENDAR: '/calendar',
   LOGIN: '/login',
   REGISTER: '/register',
+  AUTH_CALLBACK: '/auth/callback',
 } as const;

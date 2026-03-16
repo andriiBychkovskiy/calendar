@@ -6,6 +6,7 @@ import { useAuthStore } from '@entities/user/store';
 const CalendarPage = React.lazy(() => import('@pages/calendar/CalendarPage'));
 const LoginPage = React.lazy(() => import('@pages/auth/LoginPage'));
 const RegisterPage = React.lazy(() => import('@pages/auth/RegisterPage'));
+const GoogleCallbackPage = React.lazy(() => import('@pages/auth/GoogleCallbackPage'));
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -46,6 +47,7 @@ export const RouterProvider: React.FC = () => (
             </PublicRoute>
           }
         />
+        <Route path={ROUTES.AUTH_CALLBACK} element={<GoogleCallbackPage />} />
       </Routes>
     </React.Suspense>
   </BrowserRouter>

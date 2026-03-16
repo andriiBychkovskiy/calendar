@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { createHash } from 'crypto';
-import { User } from '../models/User.model';
+import { User, IUser } from '../models/User.model';
 import { jwtConfig } from '../config/jwt.config';
 
 const hashToken = (token: string): string =>
@@ -118,5 +118,27 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
   } catch (err) {
     console.error('[logout]', err);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const googleCallback = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = req.user as IUser;
+    const { accessToken, refreshToken } = generateTokens(String(user._id));
+    user.refreshToken = hashToken(refreshToken);
+    await user.save();
+
+    setRefreshCookie(res, refreshToken);
+
+    const params = new URLSearchParams({
+      token: accessToken,
+      id: String(user._id),
+      email: user.email,
+      name: user.name,
+    });
+    res.redirect(`${process.env.CLIENT_URL}/auth/callback?${params}`);
+  } catch (err) {
+    console.error('[googleCallback]', err);
+    res.redirect(`${process.env.CLIENT_URL}/login?error=google_failed`);
   }
 };
