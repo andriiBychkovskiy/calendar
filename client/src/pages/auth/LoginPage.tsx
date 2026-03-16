@@ -23,6 +23,8 @@ const LoginPage: React.FC = () => {
   const setAuth = useAuthStore((s) => s.setAuth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [emailAutofilled, setEmailAutofilled] = useState(false);
+  const [passwordAutofilled, setPasswordAutofilled] = useState(false);
   const [error, setError] = useState(searchParams.get('error') === 'google_failed' ? 'Google sign-in failed. Please try again.' : '');
   const [loading, setLoading] = useState(false);
 
@@ -81,6 +83,13 @@ const LoginPage: React.FC = () => {
             required
             fullWidth
             autoComplete="email"
+            InputLabelProps={{ shrink: !!email || emailAutofilled }}
+            inputProps={{
+              onAnimationStart: (e: React.AnimationEvent<HTMLInputElement>) => {
+                if (e.animationName === 'mui-auto-fill') setEmailAutofilled(true);
+                if (e.animationName === 'mui-auto-fill-cancel') setEmailAutofilled(false);
+              },
+            }}
           />
           <TextField
             label="Password"
@@ -90,6 +99,13 @@ const LoginPage: React.FC = () => {
             required
             fullWidth
             autoComplete="current-password"
+            InputLabelProps={{ shrink: !!password || passwordAutofilled }}
+            inputProps={{
+              onAnimationStart: (e: React.AnimationEvent<HTMLInputElement>) => {
+                if (e.animationName === 'mui-auto-fill') setPasswordAutofilled(true);
+                if (e.animationName === 'mui-auto-fill-cancel') setPasswordAutofilled(false);
+              },
+            }}
           />
           <Button
             type="submit"

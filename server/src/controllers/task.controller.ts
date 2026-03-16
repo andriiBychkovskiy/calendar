@@ -103,7 +103,7 @@ export const getDailyProgress = async (req: AuthRequest, res: Response): Promise
         },
       },
       { $unwind: '$checklist' },
-      { $match: { 'checklist.type': { $ne: 'expanse' } } },
+      { $match: { 'checklist.type': { $ne: 'expense' } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$dueDate' } },

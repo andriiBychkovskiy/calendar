@@ -11,14 +11,14 @@ const taskGroupSchema = z.object({
   tasks: z.array(optionSchema).max(200),
 });
 
-const expanseGroupSchema = z.object({
+const expenseGroupSchema = z.object({
   id:       z.string().min(1).max(100),
   title:    z.string().min(1).max(200).trim(),
-  expanses: z.array(optionSchema).max(200),
+  expenses: z.array(optionSchema).max(200),
 });
 
 export const updateOptionsSchema = z.object({
   taskGroups:    z.array(taskGroupSchema).max(50),
-  expanseGroups: z.array(expanseGroupSchema).max(50),
+  expenseGroups: z.array(expenseGroupSchema).max(50),
   currency:      z.string().min(1).max(10),
 });

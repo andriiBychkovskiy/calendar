@@ -3,12 +3,12 @@ import mongoose, { Document, Schema } from 'mongoose';
 interface IOption { id: string; value: string; }
 
 interface ITaskGroup   { id: string; title: string; tasks: IOption[]; }
-interface IExpanseGroup { id: string; title: string; expanses: IOption[]; }
+interface IExpenseGroup { id: string; title: string; expenses: IOption[]; }
 
 export interface IOptions extends Document {
   userId: mongoose.Types.ObjectId;
   taskGroups: ITaskGroup[];
-  expanseGroups: IExpanseGroup[];
+  expenseGroups: IExpenseGroup[];
   currency: string;
 }
 
@@ -22,8 +22,8 @@ const TaskGroupSchema = new Schema<ITaskGroup>(
   { _id: false }
 );
 
-const ExpanseGroupSchema = new Schema<IExpanseGroup>(
-  { id: { type: String, required: true }, title: { type: String, required: true }, expanses: [OptionSchema] },
+const ExpenseGroupSchema = new Schema<IExpenseGroup>(
+  { id: { type: String, required: true }, title: { type: String, required: true }, expenses: [OptionSchema] },
   { _id: false }
 );
 
@@ -31,7 +31,7 @@ const OptionsSchema = new Schema<IOptions>(
   {
     userId:        { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     taskGroups:    { type: [TaskGroupSchema],    default: [] },
-    expanseGroups: { type: [ExpanseGroupSchema], default: [] },
+    expenseGroups: { type: [ExpenseGroupSchema], default: [] },
     currency:      { type: String, default: 'USD' },
   },
   { timestamps: true }

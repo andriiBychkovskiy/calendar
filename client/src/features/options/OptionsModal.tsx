@@ -18,13 +18,13 @@ interface OptionsModalProps {
 export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose }) => {
   const [activeTab, setActiveTab] = useState(0);
   const {
-    taskOptions, expansesOptions,
+    taskOptions, expensesOptions,
     currency, saveError,
     setCurrency,
     addTaskGroup, updateTaskGroup, removeTaskGroup,
     addTaskOption, updateTaskOption, removeTaskOption,
-    addExpanseGroup, updateExpanseGroup, removeExpanseGroup,
-    addExpanseOption, updateExpanseOption, removeExpanseOption,
+    addExpenseGroup, updateExpenseGroup, removeExpenseGroup,
+    addExpenseOption, updateExpenseOption, removeExpenseOption,
   } = useOptionsStore();
 
   const handleCurrencyChange = (e: SelectChangeEvent) => setCurrency(e.target.value);
@@ -37,12 +37,12 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose }) => 
     addTaskOption(groupId, { id: crypto.randomUUID(), value });
   };
 
-  const handleAddExpanseGroup = (title: string) => {
-    addExpanseGroup({ id: crypto.randomUUID(), title, expanses: [] });
+  const handleAddExpenseGroup = (title: string) => {
+    addExpenseGroup({ id: crypto.randomUUID(), title, expenses: [] });
   };
 
-  const handleAddExpanseOption = (groupId: string, value: string) => {
-    addExpanseOption(groupId, { id: crypto.randomUUID(), value });
+  const handleAddExpenseOption = (groupId: string, value: string) => {
+    addExpenseOption(groupId, { id: crypto.randomUUID(), value });
   };
 
   return (
@@ -68,7 +68,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose }) => 
           TabIndicatorProps={{ sx: { height: 2 } }}
         >
           <Tab label="Tasks" sx={{ minHeight: 40, py: 0, fontSize: '0.875rem', fontWeight: 500 }} />
-          <Tab label="Expanses" sx={{ minHeight: 40, py: 0, fontSize: '0.875rem', fontWeight: 500 }} />
+          <Tab label="Expenses" sx={{ minHeight: 40, py: 0, fontSize: '0.875rem', fontWeight: 500 }} />
         </Tabs>
       </Box>
 
@@ -121,19 +121,19 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose }) => 
             </Box>
 
             <OptionsSection
-              title="Expanses Options"
-              itemLabel="expanse"
-              groups={expansesOptions.groups.map((g) => ({
+              title="Expenses Options"
+              itemLabel="expense"
+              groups={expensesOptions.groups.map((g) => ({
                 id: g.id,
                 title: g.title,
-                items: g.expanses.map((e) => ({ id: e.id, value: e.value })),
+                items: g.expenses.map((e) => ({ id: e.id, value: e.value })),
               }))}
-              onAddGroup={handleAddExpanseGroup}
-              onUpdateGroup={updateExpanseGroup}
-              onRemoveGroup={removeExpanseGroup}
-              onAddItem={handleAddExpanseOption}
-              onUpdateItem={updateExpanseOption}
-              onRemoveItem={removeExpanseOption}
+              onAddGroup={handleAddExpenseGroup}
+              onUpdateGroup={updateExpenseGroup}
+              onRemoveGroup={removeExpenseGroup}
+              onAddItem={handleAddExpenseOption}
+              onUpdateItem={updateExpenseOption}
+              onRemoveItem={removeExpenseOption}
             />
           </>
         )}

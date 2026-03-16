@@ -12,7 +12,7 @@ import { useOptionsStore } from '@entities/options/store';
 import type { ChecklistItem } from '@shared/types';
 import { InlineDatePicker } from './InlineDatePicker';
 import { TasksAccordion } from './TasksAccordion';
-import { ExpansesAccordion } from './ExpansesAccordion';
+import { ExpensesAccordion } from './ExpensesAccordion';
 import { ItemSelectionDialog } from './ItemSelectionDialog';
 
 const toDateUTC = (date: Date): string => `${format(date, 'yyyy-MM-dd')}T12:00:00.000Z`;
@@ -42,11 +42,11 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
   const patchTask     = useTaskStore((s) => s.patchTask);
   const silentRefetch = useTaskStore((s) => s.silentRefetch);
   const allTasks      = useTaskStore((s) => s.tasks);
-  const { taskOptions, expansesOptions } = useOptionsStore();
+  const { taskOptions, expensesOptions } = useOptionsStore();
 
   const [dueDate, setDueDate]         = useState<Date>(defaultDate ?? new Date());
   const [taskItems, setTaskItems]     = useState<ChecklistItem[]>([]);
-  const [expanseItems, setExpanseItems] = useState<ChecklistItem[]>([]);
+  const [expenseItems, setExpenseItems] = useState<ChecklistItem[]>([]);
   const [primaryTaskId, setPrimaryTaskId] = useState<string | null>(null);
   const [extraTaskIds, setExtraTaskIds]   = useState<string[]>([]);
   const [isDirty, setIsDirty]             = useState(false);
@@ -57,8 +57,8 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
   const [error, setError]                       = useState('');
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [deleting, setDeleting]                 = useState(false);
-  // null = closed, 'task'/'expanse' = open for that type
-  const [selectionOpen, setSelectionOpen] = useState<'task' | 'expanse' | null>(null);
+  // null = closed, 'task'/'expense' = open for that type
+  const [selectionOpen, setSelectionOpen] = useState<'task' | 'expense' | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -71,22 +71,22 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
     const mergedChecklist = dayTasks.flatMap((t) => t.checklist);
 
     if (mode === 'copy') {
-      setTaskItems(mergedChecklist.filter((i) => i.type !== 'expanse').map((i) => ({ ...i, completed: false })));
-      setExpanseItems([]);
+      setTaskItems(mergedChecklist.filter((i) => i.type !== 'expense').map((i) => ({ ...i, completed: false })));
+      setExpenseItems([]);
       const next = new Date(defaultDate ?? new Date());
       next.setDate(next.getDate() + 1);
       setDueDate(next);
       setPrimaryTaskId(null);
       setExtraTaskIds([]);
     } else if (mode === 'view') {
-      setTaskItems(mergedChecklist.filter((i) => i.type !== 'expanse'));
-      setExpanseItems(mergedChecklist.filter((i) => i.type === 'expanse'));
+      setTaskItems(mergedChecklist.filter((i) => i.type !== 'expense'));
+      setExpenseItems(mergedChecklist.filter((i) => i.type === 'expense'));
       setPrimaryTaskId(dayTasks[0]?._id ?? null);
       setExtraTaskIds(dayTasks.slice(1).map((t) => t._id));
       setDueDate(defaultDate ?? new Date());
     } else {
       setTaskItems([]);
-      setExpanseItems([]);
+      setExpenseItems([]);
       setDueDate(defaultDate ?? new Date());
       setPrimaryTaskId(null);
       setExtraTaskIds([]);
@@ -116,22 +116,22 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
     setIsDirty(true);
   };
 
-  // ─── Expanse helpers ───────────────────────────────────────────────────────
+  // ─── Expense helpers ───────────────────────────────────────────────────────
 
-  const updateExpanseAmount = (idx: number, amount: number | undefined) => {
-    setExpanseItems((prev) => prev.map((item, i) => (i === idx ? { ...item, amount } : item)));
+  const updateExpenseAmount = (idx: number, amount: number | undefined) => {
+    setExpenseItems((prev) => prev.map((item, i) => (i === idx ? { ...item, amount } : item)));
     setIsDirty(true);
   };
 
-  const removeExpanse = (idx: number) => {
-    setExpanseItems((prev) => prev.filter((_, i) => i !== idx));
+  const removeExpense = (idx: number) => {
+    setExpenseItems((prev) => prev.filter((_, i) => i !== idx));
     setIsDirty(true);
   };
 
-  const addExpansesFromOptions = (selected: Array<{ id: string; value: string }>) => {
-    setExpanseItems((prev) => [
+  const addExpensesFromOptions = (selected: Array<{ id: string; value: string }>) => {
+    setExpenseItems((prev) => [
       ...prev,
-      ...selected.map((opt) => ({ text: opt.value, completed: false, type: 'expanse' as const, optionId: opt.id })),
+      ...selected.map((opt) => ({ text: opt.value, completed: false, type: 'expense' as const, optionId: opt.id })),
     ]);
     setIsDirty(true);
   };
@@ -139,9 +139,9 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
   // ─── API handlers ──────────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
-    const fullChecklist = [...taskItems, ...expanseItems];
+    const fullChecklist = [...taskItems, ...expenseItems];
     if (fullChecklist.length === 0) {
-      setError('Select at least one task or expanse.');
+      setError('Select at least one task or expense.');
       return;
     }
     setError('');
@@ -160,7 +160,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
   const handleApply = async () => {
     setApplying(true);
     try {
-      const fullChecklist = [...taskItems, ...expanseItems];
+      const fullChecklist = [...taskItems, ...expenseItems];
       if (primaryTaskId) {
         const updated = await taskApi.updateTask(primaryTaskId, { checklist: fullChecklist });
         patchTask(updated);
@@ -208,7 +208,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
 
   // ─── Derived ───────────────────────────────────────────────────────────────
 
-  // Tasks can only be added once per option; expanses can be added multiple times
+  // Tasks can only be added once per option; expenses can be added multiple times
   const selectedTaskOptionIds = new Set(taskItems.map((i) => i.optionId).filter(Boolean) as string[]);
 
   const taskGroups = taskOptions.groups.map((g) => ({
@@ -216,9 +216,9 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
     items: g.tasks.map((t) => ({ id: t.id, value: t.value })),
   }));
 
-  const expanseGroups = expansesOptions.groups.map((g) => ({
+  const expenseGroups = expensesOptions.groups.map((g) => ({
     id: g.id, title: g.title,
-    items: g.expanses.map((e) => ({ id: e.id, value: e.value })),
+    items: g.expenses.map((e) => ({ id: e.id, value: e.value })),
   }));
 
   const modalTitle =
@@ -284,12 +284,12 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
           />
 
           {mode !== 'copy' && (
-            <ExpansesAccordion
+            <ExpensesAccordion
               mode={mode}
-              items={expanseItems}
-              onUpdateAmount={updateExpanseAmount}
-              onRemove={removeExpanse}
-              onAddClick={() => setSelectionOpen('expanse')}
+              items={expenseItems}
+              onUpdateAmount={updateExpenseAmount}
+              onRemove={removeExpense}
+              onAddClick={() => setSelectionOpen('expense')}
             />
           )}
 
@@ -353,10 +353,10 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
       <ItemSelectionDialog
         open={selectionOpen !== null}
         onClose={() => setSelectionOpen(null)}
-        title={selectionOpen === 'task' ? 'Select tasks' : 'Select expanses'}
-        groups={selectionOpen === 'task' ? taskGroups : expanseGroups}
+        title={selectionOpen === 'task' ? 'Select tasks' : 'Select expenses'}
+        groups={selectionOpen === 'task' ? taskGroups : expenseGroups}
         alreadySelectedIds={selectionOpen === 'task' ? selectedTaskOptionIds : new Set()}
-        onConfirm={selectionOpen === 'task' ? addTasksFromOptions : addExpansesFromOptions}
+        onConfirm={selectionOpen === 'task' ? addTasksFromOptions : addExpensesFromOptions}
       />
     </>
   );

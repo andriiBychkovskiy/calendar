@@ -1,9 +1,9 @@
 import { axiosInstance } from './axios';
-import type { TaskGroup, ExpanseGroup } from '../types';
+import type { TaskGroup, ExpenseGroup } from '../types';
 
 export interface ServerOptions {
   taskGroups: TaskGroup[];
-  expanseGroups: ExpanseGroup[];
+  expenseGroups: ExpenseGroup[];
   currency: string;
 }
 
