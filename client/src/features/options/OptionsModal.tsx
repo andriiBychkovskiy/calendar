@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent,
   Box, Typography, IconButton, Tabs, Tab,
@@ -13,10 +13,16 @@ import { OptionsSection } from './OptionsSection';
 interface OptionsModalProps {
   open: boolean;
   onClose: () => void;
+  initialTab?: 0 | 1;
 }
 
-export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose }) => {
-  const [activeTab, setActiveTab] = useState(0);
+export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose, initialTab = 0 }) => {
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    if (open) setActiveTab(initialTab);
+  }, [open, initialTab]);
+
   const {
     taskOptions, expensesOptions,
     currency, saveError,

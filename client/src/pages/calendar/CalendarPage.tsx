@@ -51,6 +51,7 @@ const CalendarPage: React.FC = () => {
   const [modalMode, setModalMode] = useState<'create' | 'view' | 'copy'>('create');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [optionsInitialTab, setOptionsInitialTab] = useState<0 | 1>(0);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteDate, setDeleteDate] = useState<Date | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -167,6 +168,11 @@ const CalendarPage: React.FC = () => {
     }
   };
 
+  const handleOpenOptions = (tab: 0 | 1 = 0) => {
+    setOptionsInitialTab(tab);
+    setOptionsOpen(true);
+  };
+
   const handleLogout = async () => {
     await authApi.logout();
     clearAuth();
@@ -240,7 +246,7 @@ const CalendarPage: React.FC = () => {
                 visibleMonth={visibleMonth.month}
                 onAddTask={() => handleAddTask()}
                 onScrollToToday={handleScrollToToday}
-                onOpenOptions={() => setOptionsOpen(true)}
+                onOpenOptions={() => handleOpenOptions()}
               />
             </Box>
 
@@ -333,11 +339,13 @@ const CalendarPage: React.FC = () => {
         onClose={() => setModalOpen(false)}
         defaultDate={selectedDate}
         mode={modalMode as 'create' | 'view' | 'copy'}
+        onOpenOptions={(tab) => handleOpenOptions(tab === 'task' ? 0 : 1)}
       />
 
       <OptionsModal
         open={optionsOpen}
         onClose={() => setOptionsOpen(false)}
+        initialTab={optionsInitialTab}
       />
 
       <Dialog

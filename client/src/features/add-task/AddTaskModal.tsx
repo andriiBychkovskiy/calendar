@@ -24,6 +24,7 @@ export interface AddTaskModalProps {
   onClose: () => void;
   defaultDate?: Date;
   mode?: ModalMode;
+  onOpenOptions?: (tab: 'task' | 'expense') => void;
 }
 
 const SX = {
@@ -37,7 +38,7 @@ const SX = {
   primaryBtn: { flex: 1, py: 1 },
 } as const;
 
-export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defaultDate, mode = 'create' }) => {
+export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defaultDate, mode = 'create', onOpenOptions }) => {
   const addTask       = useTaskStore((s) => s.addTask);
   const patchTask     = useTaskStore((s) => s.patchTask);
   const silentRefetch = useTaskStore((s) => s.silentRefetch);
@@ -59,6 +60,10 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
   const [deleting, setDeleting]                 = useState(false);
   // null = closed, 'task'/'expense' = open for that type
   const [selectionOpen, setSelectionOpen] = useState<'task' | 'expense' | null>(null);
+  const [noOptionsDialogType, setNoOptionsDialogType] = useState<'task' | 'expense' | null>(null);
+
+  const hasNoTaskOptions = taskOptions.groups.every((g) => g.tasks.length === 0);
+  const hasNoExpenseOptions = expensesOptions.groups.every((g) => g.expenses.length === 0);
 
   useEffect(() => {
     if (!open) return;
@@ -280,7 +285,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
             items={taskItems}
             onToggle={mode === 'view' ? toggleTask : undefined}
             onRemove={removeTask}
-            onAddClick={() => setSelectionOpen('task')}
+            onAddClick={() => hasNoTaskOptions ? setNoOptionsDialogType('task') : setSelectionOpen('task')}
           />
 
           {mode !== 'copy' && (
@@ -289,7 +294,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
               items={expenseItems}
               onUpdateAmount={updateExpenseAmount}
               onRemove={removeExpense}
-              onAddClick={() => setSelectionOpen('expense')}
+              onAddClick={() => hasNoExpenseOptions ? setNoOptionsDialogType('expense') : setSelectionOpen('expense')}
             />
           )}
 
@@ -358,6 +363,38 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
         alreadySelectedIds={selectionOpen === 'task' ? selectedTaskOptionIds : new Set()}
         onConfirm={selectionOpen === 'task' ? addTasksFromOptions : addExpensesFromOptions}
       />
+
+      <Dialog
+        open={noOptionsDialogType !== null}
+        onClose={() => setNoOptionsDialogType(null)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>No options available</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            You need to create options before adding a task or expense.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1, gap: 1 }}>
+          <Button variant="outlined" onClick={() => setNoOptionsDialogType(null)} sx={SX.closeBtn}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              const tab = noOptionsDialogType ?? 'task';
+              setNoOptionsDialogType(null);
+              onClose();
+              onOpenOptions?.(tab);
+            }}
+            sx={SX.primaryBtn}
+          >
+            Go to Options
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
