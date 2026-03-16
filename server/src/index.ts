@@ -5,11 +5,13 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs';
+import passport, { setupGoogleStrategy } from './config/passport.config';
 import authRoutes from './routes/auth.routes';
 import taskRoutes from './routes/task.routes';
 import optionsRoutes from './routes/options.routes';
 
 dotenv.config();
+setupGoogleStrategy();
 
 const REQUIRED_ENV = ['MONGO_URI', 'JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'] as const;
 for (const key of REQUIRED_ENV) {
@@ -29,6 +31,7 @@ if (process.env.CLIENT_URL) {
 }
 app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
+app.use(passport.initialize());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
