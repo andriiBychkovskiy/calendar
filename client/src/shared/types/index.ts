@@ -2,7 +2,7 @@ export interface ChecklistItem {
   _id?: string;
   text: string;
   completed: boolean;
-  type?: 'task' | 'expanse';
+  type?: 'task' | 'expense';
   optionId?: string;
   amount?: number;
 }
@@ -68,19 +68,19 @@ export interface TaskOptions {
   groups: TaskGroup[];
 }
 
-export interface ExpanseOption {
+export interface ExpenseOption {
   id: string;
   value: string;
 }
 
-export interface ExpanseGroup {
+export interface ExpenseGroup {
   id: string;
   title: string;
-  expanses: ExpanseOption[];
+  expenses: ExpenseOption[];
 }
 
-export interface ExpansesOptions {
+export interface ExpensesOptions {
   id: string;
   title: string;
-  groups: ExpanseGroup[];
+  groups: ExpenseGroup[];
 }

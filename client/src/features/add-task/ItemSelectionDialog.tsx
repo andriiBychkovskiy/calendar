@@ -32,7 +32,7 @@ export const ItemSelectionDialog: React.FC<ItemSelectionDialogProps> = ({
     if (!open) return;
     setSelectedIds(new Set());
     setExpandedGroups(new Set(groups.map((g) => g.id)));
-  // groups identity changes when dialog switches between task/expanse — intentional
+  // groups identity changes when dialog switches between task/expense — intentional
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 

@@ -25,13 +25,13 @@ interface TaskState {
   removeTask: (id: string) => void;
 }
 
-// Returns undefined when there are no task items (only expanses or nothing)
+// Returns undefined when there are no task items (only expenses or nothing)
 const recalcProgressForDate = (tasks: Task[], dateKey: string): number | undefined => {
   const dayTasks = tasks.filter((t) => t.dueDate.split('T')[0] === dateKey);
   let total = 0;
   let completed = 0;
   for (const t of dayTasks) {
-    const taskItems = t.checklist.filter((c) => c.type !== 'expanse');
+    const taskItems = t.checklist.filter((c) => c.type !== 'expense');
     total += taskItems.length;
     completed += taskItems.filter((c) => c.completed).length;
   }
@@ -52,7 +52,7 @@ const computeExpensesMap = (tasks: Task[]): Record<string, number> => {
   for (const t of tasks) {
     const dateKey = t.dueDate.split('T')[0];
     const dayTotal = t.checklist
-      .filter((c) => c.type === 'expanse')
+      .filter((c) => c.type === 'expense')
       .reduce((sum, c) => sum + (c.amount ?? 0), 0);
     if (dayTotal > 0) {
       map[dateKey] = (map[dateKey] ?? 0) + dayTotal;

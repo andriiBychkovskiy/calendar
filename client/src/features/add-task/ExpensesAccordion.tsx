@@ -11,7 +11,7 @@ import { useOptionsStore } from '@entities/options/store';
 import { CURRENCIES } from '@entities/options/currencies';
 import type { ChecklistItem } from '@shared/types';
 
-interface ExpansesAccordionProps {
+interface ExpensesAccordionProps {
   mode: 'create' | 'view';
   items: ChecklistItem[];
   onUpdateAmount: (idx: number, amount: number | undefined) => void;
@@ -19,7 +19,7 @@ interface ExpansesAccordionProps {
   onAddClick: () => void;
 }
 
-export const ExpansesAccordion: React.FC<ExpansesAccordionProps> = ({
+export const ExpensesAccordion: React.FC<ExpensesAccordionProps> = ({
   mode, items, onUpdateAmount, onRemove, onAddClick,
 }) => {
   const showAmountInputs = mode === 'view';
@@ -37,7 +37,7 @@ export const ExpansesAccordion: React.FC<ExpansesAccordionProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
           <AccountBalanceWalletOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
           <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-            Expanses
+            Expenses
           </Typography>
           {total > 0 && (
             <Typography variant="caption" sx={{ color: 'text.secondary', ml: 'auto', pr: 1 }}>
@@ -92,7 +92,7 @@ export const ExpansesAccordion: React.FC<ExpansesAccordionProps> = ({
           size="small"
           sx={{ color: 'primary.main', fontWeight: 500, px: 0.5, mt: items.length > 0 ? 0.75 : 0, '&:hover': { background: 'transparent', opacity: 0.8 } }}
         >
-          Add expanse
+          Add expense
         </Button>
       </AccordionDetails>
     </Accordion>

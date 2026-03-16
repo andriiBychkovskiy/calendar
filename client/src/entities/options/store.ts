@@ -2,11 +2,11 @@ import { create } from 'zustand';
 import { optionsApi } from '@shared/api/options.api';
 import type {
   TaskOptions,
-  ExpansesOptions,
+  ExpensesOptions,
   TaskGroup,
   TaskOption,
-  ExpanseGroup,
-  ExpanseOption,
+  ExpenseGroup,
+  ExpenseOption,
 } from '@shared/types';
 
 const initialTaskOptions: TaskOptions = {
@@ -15,15 +15,15 @@ const initialTaskOptions: TaskOptions = {
   groups: [],
 };
 
-const initialExpansesOptions: ExpansesOptions = {
-  id: 'expanses-options',
-  title: 'Expanses Options',
+const initialExpensesOptions: ExpensesOptions = {
+  id: 'expenses-options',
+  title: 'Expenses Options',
   groups: [],
 };
 
 interface OptionsState {
   taskOptions: TaskOptions;
-  expansesOptions: ExpansesOptions;
+  expensesOptions: ExpensesOptions;
   currency: string;
   isLoading: boolean;
   saveError: boolean;
@@ -35,25 +35,25 @@ interface OptionsState {
   addTaskOption: (groupId: string, task: TaskOption) => void;
   updateTaskOption: (groupId: string, taskId: string, value: string) => void;
   removeTaskOption: (groupId: string, taskId: string) => void;
-  addExpanseGroup: (group: ExpanseGroup) => void;
-  updateExpanseGroup: (groupId: string, title: string) => void;
-  removeExpanseGroup: (groupId: string) => void;
-  addExpanseOption: (groupId: string, expanse: ExpanseOption) => void;
-  updateExpanseOption: (groupId: string, expanseId: string, value: string) => void;
-  removeExpanseOption: (groupId: string, expanseId: string) => void;
+  addExpenseGroup: (group: ExpenseGroup) => void;
+  updateExpenseGroup: (groupId: string, title: string) => void;
+  removeExpenseGroup: (groupId: string) => void;
+  addExpenseOption: (groupId: string, expense: ExpenseOption) => void;
+  updateExpenseOption: (groupId: string, expenseId: string, value: string) => void;
+  removeExpenseOption: (groupId: string, expenseId: string) => void;
 }
 
 const saveToServer = (get: () => OptionsState, set: (partial: Partial<OptionsState>) => void) => {
-  const { taskOptions, expansesOptions, currency } = get();
+  const { taskOptions, expensesOptions, currency } = get();
   optionsApi
-    .updateOptions({ taskGroups: taskOptions.groups, expanseGroups: expansesOptions.groups, currency })
+    .updateOptions({ taskGroups: taskOptions.groups, expenseGroups: expensesOptions.groups, currency })
     .then(() => set({ saveError: false }))
     .catch(() => set({ saveError: true }));
 };
 
 export const useOptionsStore = create<OptionsState>()((set, get) => ({
   taskOptions: initialTaskOptions,
-  expansesOptions: initialExpansesOptions,
+  expensesOptions: initialExpensesOptions,
   currency: 'USD',
   isLoading: false,
   saveError: false,
@@ -61,10 +61,10 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
   loadOptions: async () => {
     set({ isLoading: true });
     try {
-      const { taskGroups, expanseGroups, currency } = await optionsApi.getOptions();
+      const { taskGroups, expenseGroups, currency } = await optionsApi.getOptions();
       set({
         taskOptions: { ...initialTaskOptions, groups: taskGroups },
-        expansesOptions: { ...initialExpansesOptions, groups: expanseGroups },
+        expensesOptions: { ...initialExpensesOptions, groups: expenseGroups },
         currency,
       });
     } catch (err) {
@@ -146,67 +146,67 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
     saveToServer(get, set);
   },
 
-  addExpanseGroup: (group) => {
+  addExpenseGroup: (group) => {
     set((state) => ({
-      expansesOptions: { ...state.expansesOptions, groups: [...state.expansesOptions.groups, group] },
+      expensesOptions: { ...state.expensesOptions, groups: [...state.expensesOptions.groups, group] },
     }));
     saveToServer(get, set);
   },
 
-  updateExpanseGroup: (groupId, title) => {
+  updateExpenseGroup: (groupId, title) => {
     set((state) => ({
-      expansesOptions: {
-        ...state.expansesOptions,
-        groups: state.expansesOptions.groups.map((g) => (g.id === groupId ? { ...g, title } : g)),
+      expensesOptions: {
+        ...state.expensesOptions,
+        groups: state.expensesOptions.groups.map((g) => (g.id === groupId ? { ...g, title } : g)),
       },
     }));
     saveToServer(get, set);
   },
 
-  removeExpanseGroup: (groupId) => {
+  removeExpenseGroup: (groupId) => {
     set((state) => ({
-      expansesOptions: {
-        ...state.expansesOptions,
-        groups: state.expansesOptions.groups.filter((g) => g.id !== groupId),
+      expensesOptions: {
+        ...state.expensesOptions,
+        groups: state.expensesOptions.groups.filter((g) => g.id !== groupId),
       },
     }));
     saveToServer(get, set);
   },
 
-  addExpanseOption: (groupId, expanse) => {
+  addExpenseOption: (groupId, expense) => {
     set((state) => ({
-      expansesOptions: {
-        ...state.expansesOptions,
-        groups: state.expansesOptions.groups.map((g) =>
-          g.id === groupId ? { ...g, expanses: [...g.expanses, expanse] } : g
+      expensesOptions: {
+        ...state.expensesOptions,
+        groups: state.expensesOptions.groups.map((g) =>
+          g.id === groupId ? { ...g, expenses: [...g.expenses, expense] } : g
         ),
       },
     }));
     saveToServer(get, set);
   },
 
-  updateExpanseOption: (groupId, expanseId, value) => {
+  updateExpenseOption: (groupId, expenseId, value) => {
     set((state) => ({
-      expansesOptions: {
-        ...state.expansesOptions,
-        groups: state.expansesOptions.groups.map((g) =>
+      expensesOptions: {
+        ...state.expensesOptions,
+        groups: state.expensesOptions.groups.map((g) =>
           g.id !== groupId
             ? g
-            : { ...g, expanses: g.expanses.map((e) => (e.id === expanseId ? { ...e, value } : e)) }
+            : { ...g, expenses: g.expenses.map((e) => (e.id === expenseId ? { ...e, value } : e)) }
         ),
       },
     }));
     saveToServer(get, set);
   },
 
-  removeExpanseOption: (groupId, expanseId) => {
+  removeExpenseOption: (groupId, expenseId) => {
     set((state) => ({
-      expansesOptions: {
-        ...state.expansesOptions,
-        groups: state.expansesOptions.groups.map((g) =>
+      expensesOptions: {
+        ...state.expensesOptions,
+        groups: state.expensesOptions.groups.map((g) =>
           g.id !== groupId
             ? g
-            : { ...g, expanses: g.expanses.filter((e) => e.id !== expanseId) }
+            : { ...g, expenses: g.expenses.filter((e) => e.id !== expenseId) }
         ),
       },
     }));
