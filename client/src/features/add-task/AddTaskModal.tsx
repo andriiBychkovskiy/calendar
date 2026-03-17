@@ -213,8 +213,20 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
 
   // ─── Derived ───────────────────────────────────────────────────────────────
 
-  // Tasks can only be added once per option; expenses can be added multiple times
-  const selectedTaskOptionIds = new Set(taskItems.map((i) => i.optionId).filter(Boolean) as string[]);
+  // Tasks can only be added once per option; expenses can be added multiple times.
+  // In 'create' mode, also exclude options already assigned to the selected date.
+  const existingDayOptionIds = mode === 'create'
+    ? allTasks
+        .filter((t) => t.dueDate.split('T')[0] === format(dueDate, 'yyyy-MM-dd'))
+        .flatMap((t) => t.checklist)
+        .map((i) => i.optionId)
+        .filter(Boolean) as string[]
+    : [];
+
+  const selectedTaskOptionIds = new Set([
+    ...taskItems.map((i) => i.optionId).filter(Boolean) as string[],
+    ...existingDayOptionIds,
+  ]);
 
   const taskGroups = taskOptions.groups.map((g) => ({
     id: g.id, title: g.title,
