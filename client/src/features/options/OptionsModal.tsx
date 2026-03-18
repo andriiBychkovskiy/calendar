@@ -28,9 +28,9 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose, initi
     currency, saveError,
     setCurrency,
     addTaskGroup, updateTaskGroup, removeTaskGroup,
-    addTaskOption, updateTaskOption, removeTaskOption,
+    addTaskOption, updateTaskOption, updateTaskOptionColor, removeTaskOption,
     addExpenseGroup, updateExpenseGroup, removeExpenseGroup,
-    addExpenseOption, updateExpenseOption, removeExpenseOption,
+    addExpenseOption, updateExpenseOption, updateExpenseOptionColor, removeExpenseOption,
   } = useOptionsStore();
 
   const handleCurrencyChange = (e: SelectChangeEvent) => setCurrency(e.target.value);
@@ -91,13 +91,14 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose, initi
             groups={taskOptions.groups.map((g) => ({
               id: g.id,
               title: g.title,
-              items: g.tasks.map((t) => ({ id: t.id, value: t.value })),
+              items: g.tasks.map((t) => ({ id: t.id, value: t.value, color: t.color })),
             }))}
             onAddGroup={handleAddTaskGroup}
             onUpdateGroup={updateTaskGroup}
             onRemoveGroup={removeTaskGroup}
             onAddItem={handleAddTaskOption}
             onUpdateItem={updateTaskOption}
+            onUpdateItemColor={updateTaskOptionColor}
             onRemoveItem={removeTaskOption}
           />
         )}
@@ -132,13 +133,14 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose, initi
               groups={expensesOptions.groups.map((g) => ({
                 id: g.id,
                 title: g.title,
-                items: g.expenses.map((e) => ({ id: e.id, value: e.value })),
+                items: g.expenses.map((e) => ({ id: e.id, value: e.value, color: e.color })),
               }))}
               onAddGroup={handleAddExpenseGroup}
               onUpdateGroup={updateExpenseGroup}
               onRemoveGroup={removeExpenseGroup}
               onAddItem={handleAddExpenseOption}
               onUpdateItem={updateExpenseOption}
+              onUpdateItemColor={updateExpenseOptionColor}
               onRemoveItem={removeExpenseOption}
             />
           </>

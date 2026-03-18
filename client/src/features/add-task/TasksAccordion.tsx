@@ -7,6 +7,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddIcon from '@mui/icons-material/Add';
 import CheckBoxOutlinedIcon from '@mui/icons-material/CheckBoxOutlined';
+import { useOptionsStore } from '@entities/options/store';
 import type { ChecklistItem } from '@shared/types';
 
 interface TasksAccordionProps {
@@ -23,21 +24,56 @@ export const TasksAccordion: React.FC<TasksAccordionProps> = ({
   const showCheckboxes = mode === 'view';
   const showAddButton = mode !== 'copy';
 
+  const tasksIsTextColored = useOptionsStore((s) => s.tasksIsTextColored);
+  const setTasksIsTextColored = useOptionsStore((s) => s.setTasksIsTextColored);
+  const hasColoredItems = items.some((i) => i.color);
+
+  const handleColorToggle = (e: React.MouseEvent | React.ChangeEvent) => {
+    e.stopPropagation();
+    setTasksIsTextColored(!tasksIsTextColored);
+  };
+
+  const getTextColor = (item: ChecklistItem): string => {
+    if (item.completed) return 'text.disabled';
+    if (tasksIsTextColored && item.color) return item.color;
+    return 'text.primary';
+  };
+
   return (
     <Accordion defaultExpanded disableGutters elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px !important', mb: 1.5, '&::before': { display: 'none' } }}>
       <AccordionSummary
         expandIcon={<ExpandMoreIcon sx={{ fontSize: 36 }} />}
-        sx={{ minHeight: 44, px: 2, '& .MuiAccordionSummary-content': { my: 0.75 } }}
+        sx={{ minHeight: 44, px: 2, '& .MuiAccordionSummary-content': { my: 0.75, width: '100%' } }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CheckBoxOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-            Tasks
-          </Typography>
-          {items.length > 0 && (
-            <Typography variant="caption" sx={{ color: 'text.secondary', bgcolor: 'grey.100', px: 0.75, borderRadius: 1 }}>
-              {items.length}
+        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+            <CheckBoxOutlinedIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+              Tasks
             </Typography>
+            {items.length > 0 && (
+              <Typography variant="caption" sx={{ color: 'text.secondary', bgcolor: 'grey.100', px: 0.75, borderRadius: 1 }}>
+                {items.length}
+              </Typography>
+            )}
+          </Box>
+
+          {hasColoredItems && (
+            <Box
+              onClick={(e) => e.stopPropagation()}
+              sx={{ display: 'flex', alignItems: 'center', gap: 0.25, mr: 0.5 }}
+            >
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem', userSelect: 'none' }}>
+                Color
+              </Typography>
+              <Checkbox
+                size="small"
+                checked={tasksIsTextColored}
+                onChange={handleColorToggle}
+                onClick={(e) => e.stopPropagation()}
+                sx={{ p: 0.25 }}
+              />
+            </Box>
           )}
         </Box>
       </AccordionSummary>
@@ -64,8 +100,9 @@ export const TasksAccordion: React.FC<TasksAccordionProps> = ({
                 sx={{
                   flex: 1,
                   fontSize: '0.875rem',
-                  color: item.completed ? 'text.disabled' : 'text.primary',
+                  color: getTextColor(item),
                   textDecoration: item.completed ? 'line-through' : 'none',
+                  transition: 'color 0.15s',
                 }}
               >
                 {item.text}

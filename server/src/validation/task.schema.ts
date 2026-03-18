@@ -6,6 +6,7 @@ const checklistItemSchema = z.object({
   type: z.enum(['task', 'expense']).default('task'),
   optionId: z.string().max(100).optional(),
   amount: z.number().min(0).max(1_000_000_000).optional(),
+  color: z.string().max(50).optional(),
 });
 
 export const createTaskSchema = z.object({

@@ -113,10 +113,16 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
     setIsDirty(true);
   };
 
-  const addTasksFromOptions = (selected: Array<{ id: string; value: string }>) => {
+  const addTasksFromOptions = (selected: Array<{ id: string; value: string; color?: string }>) => {
     setTaskItems((prev) => [
       ...prev,
-      ...selected.map((opt) => ({ text: opt.value, completed: false, type: 'task' as const, optionId: opt.id })),
+      ...selected.map((opt) => ({
+        text: opt.value,
+        completed: false,
+        type: 'task' as const,
+        optionId: opt.id,
+        color: opt.color,
+      })),
     ]);
     setIsDirty(true);
   };
@@ -133,10 +139,16 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
     setIsDirty(true);
   };
 
-  const addExpensesFromOptions = (selected: Array<{ id: string; value: string }>) => {
+  const addExpensesFromOptions = (selected: Array<{ id: string; value: string; color?: string }>) => {
     setExpenseItems((prev) => [
       ...prev,
-      ...selected.map((opt) => ({ text: opt.value, completed: false, type: 'expense' as const, optionId: opt.id })),
+      ...selected.map((opt) => ({
+        text: opt.value,
+        completed: false,
+        type: 'expense' as const,
+        optionId: opt.id,
+        color: opt.color,
+      })),
     ]);
     setIsDirty(true);
   };
@@ -230,12 +242,12 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
 
   const taskGroups = taskOptions.groups.map((g) => ({
     id: g.id, title: g.title,
-    items: g.tasks.map((t) => ({ id: t.id, value: t.value })),
+    items: g.tasks.map((t) => ({ id: t.id, value: t.value, color: t.color })),
   }));
 
   const expenseGroups = expensesOptions.groups.map((g) => ({
     id: g.id, title: g.title,
-    items: g.expenses.map((e) => ({ id: e.id, value: e.value })),
+    items: g.expenses.map((e) => ({ id: e.id, value: e.value, color: e.color })),
   }));
 
   const modalTitle =
