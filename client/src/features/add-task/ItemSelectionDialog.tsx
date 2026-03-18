@@ -6,10 +6,16 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
+export interface SelectionItem {
+  id: string;
+  value: string;
+  color?: string;
+}
+
 export interface SelectionGroup {
   id: string;
   title: string;
-  items: Array<{ id: string; value: string }>;
+  items: SelectionItem[];
 }
 
 interface ItemSelectionDialogProps {
@@ -18,7 +24,7 @@ interface ItemSelectionDialogProps {
   title: string;
   groups: SelectionGroup[];
   alreadySelectedIds: Set<string>;
-  onConfirm: (items: Array<{ id: string; value: string }>) => void;
+  onConfirm: (items: SelectionItem[]) => void;
 }
 
 export const ItemSelectionDialog: React.FC<ItemSelectionDialogProps> = ({

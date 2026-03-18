@@ -7,6 +7,7 @@ export interface IChecklistItem {
   type?: 'task' | 'expense';
   optionId?: string;
   amount?: number;
+  color?: string;
 }
 
 export interface ITask extends Document {
@@ -23,6 +24,7 @@ const ChecklistItemSchema = new Schema<IChecklistItem>({
   type: { type: String, enum: ['task', 'expense'], default: 'task' },
   optionId: { type: String },
   amount: { type: Number },
+  color: { type: String },
 });
 
 const TaskSchema = new Schema<ITask>(

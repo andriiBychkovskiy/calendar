@@ -9,10 +9,12 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import AddIcon from '@mui/icons-material/Add';
+import { ColorPicker } from '@shared/ui/ColorPicker/ColorPicker';
 
 interface OptionItem {
   id: string;
   value: string;
+  color?: string;
 }
 
 interface OptionGroup {
@@ -30,13 +32,14 @@ interface OptionsSectionProps {
   onRemoveGroup: (groupId: string) => void;
   onAddItem: (groupId: string, value: string) => void;
   onUpdateItem: (groupId: string, itemId: string, value: string) => void;
+  onUpdateItemColor: (groupId: string, itemId: string, color: string) => void;
   onRemoveItem: (groupId: string, itemId: string) => void;
 }
 
 export const OptionsSection: React.FC<OptionsSectionProps> = ({
   title, itemLabel, groups,
   onAddGroup, onUpdateGroup, onRemoveGroup,
-  onAddItem, onUpdateItem, onRemoveItem,
+  onAddItem, onUpdateItem, onUpdateItemColor, onRemoveItem,
 }) => {
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -152,6 +155,10 @@ export const OptionsSection: React.FC<OptionsSectionProps> = ({
                 <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   {editingItem?.groupId === group.id && editingItem?.itemId === item.id ? (
                     <>
+                      <ColorPicker
+                        value={item.color}
+                        onChange={(color) => onUpdateItemColor(group.id, item.id, color)}
+                      />
                       <TextField
                         value={editingItemValue}
                         onChange={(e) => setEditingItemValue(e.target.value)}
@@ -168,7 +175,20 @@ export const OptionsSection: React.FC<OptionsSectionProps> = ({
                     </>
                   ) : (
                     <>
-                      <Typography variant="body2" sx={{ flex: 1, fontSize: '0.875rem' }}>{item.value}</Typography>
+                      <ColorPicker
+                        value={item.color}
+                        onChange={(color) => onUpdateItemColor(group.id, item.id, color)}
+                      />
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          flex: 1,
+                          fontSize: '0.875rem',
+                          color: item.color || 'text.primary',
+                        }}
+                      >
+                        {item.value}
+                      </Typography>
                       <IconButton size="small" onClick={() => handleStartEditItem(group.id, item.id, item.value)} sx={{ color: 'text.secondary' }}>
                         <EditOutlinedIcon sx={{ fontSize: 13 }} />
                       </IconButton>

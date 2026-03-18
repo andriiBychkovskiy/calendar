@@ -5,6 +5,7 @@ export interface ChecklistItem {
   type?: 'task' | 'expense';
   optionId?: string;
   amount?: number;
+  color?: string;
 }
 
 export interface Task {
@@ -54,6 +55,7 @@ export const getSmileyState = (percentage: number): SmileyState => {
 export interface TaskOption {
   id: string;
   value: string;
+  color?: string;
 }
 
 export interface TaskGroup {
@@ -71,6 +73,7 @@ export interface TaskOptions {
 export interface ExpenseOption {
   id: string;
   value: string;
+  color?: string;
 }
 
 export interface ExpenseGroup {

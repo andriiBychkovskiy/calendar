@@ -5,6 +5,8 @@ export interface ServerOptions {
   taskGroups: TaskGroup[];
   expenseGroups: ExpenseGroup[];
   currency: string;
+  tasksIsTextColored: boolean;
+  expensesIsTextColored: boolean;
 }
 
 export const optionsApi = {

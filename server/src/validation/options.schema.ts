@@ -3,6 +3,7 @@ import { z } from 'zod';
 const optionSchema = z.object({
   id:    z.string().min(1).max(100),
   value: z.string().min(1).max(500).trim(),
+  color: z.string().max(50).optional(),
 });
 
 const taskGroupSchema = z.object({
@@ -18,7 +19,9 @@ const expenseGroupSchema = z.object({
 });
 
 export const updateOptionsSchema = z.object({
-  taskGroups:    z.array(taskGroupSchema).max(50),
-  expenseGroups: z.array(expenseGroupSchema).max(50),
-  currency:      z.string().min(1).max(10),
+  taskGroups:            z.array(taskGroupSchema).max(50),
+  expenseGroups:         z.array(expenseGroupSchema).max(50),
+  currency:              z.string().min(1).max(10),
+  tasksIsTextColored:    z.boolean().optional(),
+  expensesIsTextColored: z.boolean().optional(),
 });
