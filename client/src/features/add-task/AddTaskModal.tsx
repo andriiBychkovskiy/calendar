@@ -33,9 +33,13 @@ const SX = {
     background: '#fff', border: '1px solid', borderColor: 'divider',
     borderRadius: 2, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden',
   },
-  actions: { px: 3, pb: 3, pt: 2, gap: 1 },
+  actions: { px: 3, pb: 3, pt: 2, gap: 1, flexShrink: 0 },
   closeBtn: { flex: 1, py: 1, borderColor: 'divider', color: 'text.primary' },
   primaryBtn: { flex: 1, py: 1 },
+  deleteBtn: {
+    flex: 1, py: 1, borderColor: 'error.light', color: 'error.main',
+    '&:hover': { background: 'rgba(211,47,47,0.04)', borderColor: 'error.main' },
+  },
 } as const;
 
 export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defaultDate, mode = 'create', onOpenOptions }) => {
@@ -268,7 +272,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           border: '1px solid', borderColor: showDatePicker ? 'primary.main' : 'divider',
           borderRadius: 2, px: 1.5, py: 1, cursor: 'pointer', userSelect: 'none',
-          '&:hover': { borderColor: '#CBD5E1' },
+          '&:hover': { borderColor: 'grey.400' },
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -293,15 +297,40 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3, overflow: 'visible' } }}>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, flexShrink: 0 }}>
           {modalTitle}
           <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ pt: 1, pb: 0, px: 3, overflow: 'visible', ...(showDatePicker && { pb: '240px', transition: 'padding-bottom 0.2s' }) }}>
+        <DialogContent
+          sx={{
+            pt: 1,
+            pb: 0,
+            px: 3,
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            ...(showDatePicker && { pb: '240px', transition: 'padding-bottom 0.2s' }),
+          }}
+        >
           {(mode === 'create' || mode === 'copy') && DateField}
 
           <TasksAccordion
@@ -350,11 +379,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
         {mode === 'view' && (
           <DialogActions sx={SX.actions}>
             <Button variant="outlined" onClick={onClose} sx={SX.closeBtn}>Close</Button>
-            <Button
-              variant="outlined"
-              onClick={() => setConfirmDeleteOpen(true)}
-              sx={{ flex: 1, py: 1, borderColor: 'error.light', color: 'error.main', '&:hover': { background: 'rgba(211,47,47,0.04)', borderColor: 'error.main' } }}
-            >
+            <Button variant="outlined" onClick={() => setConfirmDeleteOpen(true)} sx={SX.deleteBtn}>
               Delete
             </Button>
             <Button variant="contained" onClick={handleApply} disabled={!isDirty || applying} sx={SX.primaryBtn}>
