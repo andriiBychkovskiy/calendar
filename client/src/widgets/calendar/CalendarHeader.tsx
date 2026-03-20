@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Typography, ButtonBase, IconButton, Tooltip } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import TuneIcon from '@mui/icons-material/Tune';
+import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
 import { format } from 'date-fns';
 
 interface CalendarHeaderProps {
@@ -10,6 +11,7 @@ interface CalendarHeaderProps {
   onAddTask: () => void;
   onScrollToToday: () => void;
   onOpenOptions: () => void;
+  onOpenStatistics: () => void;
 }
 
 export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
@@ -18,6 +20,7 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onAddTask,
   onScrollToToday,
   onOpenOptions,
+  onOpenStatistics,
 }) => {
   const visibleDate = new Date(visibleYear, visibleMonth - 1, 1);
   const now = new Date();
@@ -49,6 +52,24 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
         {/* Options button */}
+        <Tooltip title="Statistics">
+          <IconButton
+            onClick={onOpenStatistics}
+            size="small"
+            sx={{
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1.5,
+              color: 'text.secondary',
+              width: 40,
+              height: 40,
+              '&:hover': { bgcolor: 'grey.50', color: 'primary.main', borderColor: 'primary.main' },
+            }}
+          >
+            <BarChartOutlinedIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
+
         <Tooltip title="Options">
           <IconButton
             onClick={onOpenOptions}
