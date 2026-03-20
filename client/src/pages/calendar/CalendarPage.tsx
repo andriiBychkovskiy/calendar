@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -18,6 +18,7 @@ import { CalendarHeader } from '@widgets/calendar/CalendarHeader';
 import { MonthSection } from '@widgets/calendar/MonthSection';
 import { AddTaskModal } from '@features/add-task/AddTaskModal';
 import { OptionsModal } from '@features/options/OptionsModal';
+import { StatisticsModal } from '@features/statistics/StatisticsModal';
 import { useTaskStore } from '@entities/task/store';
 import { useAuthStore } from '@entities/user/store';
 import { useOptionsStore } from '@entities/options/store';
@@ -46,10 +47,14 @@ const CalendarPage: React.FC = () => {
   } = useTaskStore();
   const { user, clearAuth } = useAuthStore();
   const loadOptions = useOptionsStore((s) => s.loadOptions);
+  const taskOptions = useOptionsStore((s) => s.taskOptions);
+  const expensesOptions = useOptionsStore((s) => s.expensesOptions);
+  const currency = useOptionsStore((s) => s.currency);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'view' | 'copy'>('create');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [statisticsOpen, setStatisticsOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [optionsInitialTab, setOptionsInitialTab] = useState<0 | 1>(0);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -64,6 +69,11 @@ const CalendarPage: React.FC = () => {
     year: now.getFullYear(),
     month: now.getMonth() + 1,
   });
+
+  const statisticsReferenceDate = useMemo(
+    () => new Date(visibleMonth.year, visibleMonth.month - 1, 15),
+    [visibleMonth.year, visibleMonth.month]
+  );
 
   useEffect(() => {
     fetchTasks();
@@ -247,6 +257,7 @@ const CalendarPage: React.FC = () => {
                 onAddTask={() => handleAddTask()}
                 onScrollToToday={handleScrollToToday}
                 onOpenOptions={() => handleOpenOptions()}
+                onOpenStatistics={() => setStatisticsOpen(true)}
               />
             </Box>
 
@@ -346,6 +357,16 @@ const CalendarPage: React.FC = () => {
         open={optionsOpen}
         onClose={() => setOptionsOpen(false)}
         initialTab={optionsInitialTab}
+      />
+
+      <StatisticsModal
+        open={statisticsOpen}
+        onClose={() => setStatisticsOpen(false)}
+        tasks={tasks}
+        taskOptions={taskOptions}
+        expensesOptions={expensesOptions}
+        currencyCode={currency}
+        referenceDate={statisticsReferenceDate}
       />
 
       <Dialog
