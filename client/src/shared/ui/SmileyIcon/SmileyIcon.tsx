@@ -1,6 +1,7 @@
 import React from 'react';
-import { Box } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import type { SmileyState } from '../../types';
+import type { Theme } from '@mui/material/styles';
 
 interface SmileyIconProps {
   state: SmileyState;
@@ -15,34 +16,63 @@ const smileyUrls: Record<SmileyState, string> = {
   celebratory: new URL('./celebratory.png', import.meta.url).href,
 };
 
+/** Фиксированный цвет на состояние (без шкалы по progress). */
+function colorForState(theme: Theme, state: SmileyState): string {
+  const neutral = typeof theme.palette.text.disabled === 'string' ? theme.palette.text.disabled : '#94A3B8';
+  const red = typeof theme.palette.error.main === 'string' ? theme.palette.error.main : '#EF4444';
+  const sky = '#0EA5E9';
+  const orange = '#FB923C';
+  const green = typeof theme.palette.primary.main === 'string' ? theme.palette.primary.main : '#2D9B6F';
+
+  const byState: Record<SmileyState, string> = {
+    sad: neutral,
+    slightly: red,
+    neutral: sky,
+    happy: orange,
+    celebratory: green,
+  };
+  return byState[state];
+}
+
 /**
- * Fixed outer frame + object-fit + equal inset so different PNG paddings
- * don’t make one state (e.g. happy) look larger than another in the same cell.
+ * Силуэт через mask + сплошной цвет, привязанный к SmileyState.
  */
-export const SmileyIcon: React.FC<SmileyIconProps> = ({ state, size = '66%' }) => (
-  <Box
-    sx={{
-      width: size,
-      height: size,
-      flexShrink: 0,
-      boxSizing: 'border-box',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      p: { xs: '7px', sm: '8px' },
-    }}
-  >
+export const SmileyIcon: React.FC<SmileyIconProps> = ({ state, size = '66%' }) => {
+  const theme = useTheme();
+  const url = smileyUrls[state];
+  const color = colorForState(theme, state);
+
+  return (
     <Box
-      component="img"
-      src={smileyUrls[state]}
-      alt={state}
+      role="img"
+      aria-label={state}
       sx={{
-        display: 'block',
-        width: '100%',
-        height: '100%',
-        objectFit: 'contain',
-        objectPosition: 'center',
+        width: size,
+        height: size,
+        flexShrink: 0,
+        boxSizing: 'border-box',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: { xs: '7px', sm: '8px' },
       }}
-    />
-  </Box>
-);
+    >
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          backgroundColor: color,
+          WebkitMaskImage: `url(${url})`,
+          WebkitMaskSize: 'contain',
+          WebkitMaskRepeat: 'no-repeat',
+          WebkitMaskPosition: 'center',
+          maskImage: `url(${url})`,
+          maskSize: 'contain',
+          maskRepeat: 'no-repeat',
+          maskPosition: 'center',
+          transition: 'background-color 0.2s ease',
+        }}
+      />
+    </Box>
+  );
+};

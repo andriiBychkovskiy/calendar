@@ -31,10 +31,11 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
     <Box
       sx={{
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        flexDirection: { xs: 'column', sm: 'row' },
+        alignItems: { xs: 'center', sm: 'center' },
+        justifyContent: { xs: 'center', sm: 'space-between' },
         mb: 2.5,
-        gap: 1,
+        gap: { xs: 1.5, sm: 1 },
       }}
     >
       <Typography
@@ -45,12 +46,22 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           letterSpacing: '-0.01em',
           fontSize: { xs: '1.75rem', sm: '2.5rem' },
           flexShrink: 0,
+          textAlign: { xs: 'center', sm: 'left' },
         }}
       >
         Calendar
       </Typography>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: { xs: 'center', sm: 'flex-end' },
+          gap: 1,
+          flexShrink: 0,
+          flexWrap: 'wrap',
+        }}
+      >
         {/* Options button */}
         <Tooltip title="Statistics">
           <IconButton
