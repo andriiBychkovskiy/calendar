@@ -1,15 +1,11 @@
-import { eachDayOfInterval, eachMonthOfInterval, format } from 'date-fns';
+import { format } from 'date-fns';
 import type { ChecklistItem, Task, TaskOptions } from '@shared/types';
-import type { DateRange, StatisticsPeriod, TaskBucketPoint, TaskGroupRow, TaskOptionRow, TaskPeriodStats } from './types';
+import type { DateRange, TaskGroupRow, TaskOptionRow, TaskPeriodStats } from './types';
 import { completionPercent } from './percentages';
+import { isTaskChecklistItem } from '@shared/lib/checklistItem';
+import { normalizeStatColor } from './colorVisibility';
 
-const DEFAULT_TASK_COLOR = '#2D9B6F';
-const FALLBACK_COLOR = '#94A3B8';
-const MAX_STACKED_OPTIONS = 6;
-
-function isTaskItem(c: ChecklistItem): boolean {
-  return c.type !== 'expense';
-}
+export { normalizeStatColor as normalizeTaskStatColor } from './colorVisibility';
 
 function dateKeyOfTask(t: Task): string {
   return t.dueDate.split('T')[0];
@@ -38,7 +34,7 @@ export function buildTaskOptionMeta(taskOptions: TaskOptions): Map<string, Optio
     for (const opt of g.tasks) {
       map.set(opt.id, {
         label: opt.value,
-        color: opt.color ?? DEFAULT_TASK_COLOR,
+        color: normalizeStatColor(opt.color),
         groupId: g.id,
         groupTitle: g.title,
       });
@@ -58,7 +54,7 @@ function metaForItem(item: ChecklistItem, lookup: Map<string, OptionMeta>): Opti
   }
   return {
     label: item.text || 'Task',
-    color: item.color ?? FALLBACK_COLOR,
+    color: normalizeStatColor(item.color),
     groupId: '__other',
     groupTitle: 'Other',
   };
@@ -74,40 +70,16 @@ function collectTaskRows(tasks: Task[], range: DateRange): TaskRow[] {
   for (const t of filterTasksInRange(tasks, range)) {
     const dk = dateKeyOfTask(t);
     for (const c of t.checklist) {
-      if (!isTaskItem(c)) continue;
+      if (!isTaskChecklistItem(c)) continue;
       rows.push({ dateKey: dk, item: c });
     }
   }
   return rows;
 }
 
-function bucketMeta(
-  period: StatisticsPeriod,
-  range: DateRange
-): { label: string; dateKey: string }[] {
-  if (period === 'year') {
-    return eachMonthOfInterval({ start: range.start, end: range.end }).map((d) => ({
-      label: format(d, 'MMM'),
-      dateKey: format(d, 'yyyy-MM'),
-    }));
-  }
-  return eachDayOfInterval({ start: range.start, end: range.end }).map((d) => ({
-    label: period === 'week' ? format(d, 'EEE') : format(d, 'd'),
-    dateKey: format(d, 'yyyy-MM-dd'),
-  }));
-}
-
-function rowsInBucket(rows: TaskRow[], bucketKey: string, period: StatisticsPeriod): TaskRow[] {
-  if (period === 'year') {
-    return rows.filter((r) => r.dateKey.slice(0, 7) === bucketKey);
-  }
-  return rows.filter((r) => r.dateKey === bucketKey);
-}
-
 export function aggregateTaskPeriod(
   tasks: Task[],
   taskOptions: TaskOptions,
-  period: StatisticsPeriod,
   range: DateRange
 ): TaskPeriodStats {
   const lookup = buildTaskOptionMeta(taskOptions);
@@ -134,7 +106,7 @@ export function aggregateTaskPeriod(
     .map(([key, v]) => ({
       key,
       label: v.meta.label,
-      color: v.meta.color,
+      color: normalizeStatColor(v.meta.color),
       groupId: v.meta.groupId,
       groupTitle: v.meta.groupTitle,
       done: v.done,
@@ -167,45 +139,9 @@ export function aggregateTaskPeriod(
     }))
     .sort((a, b) => b.total - a.total);
 
-  const stackedKeys = byOption.slice(0, MAX_STACKED_OPTIONS).map((o) => o.key);
-
-  const bucketsMeta = bucketMeta(period, range);
-  const buckets: TaskBucketPoint[] = [];
-  const stackedSeries: Array<Record<string, string | number>> = [];
-
-  for (const b of bucketsMeta) {
-    const br = rowsInBucket(rows, b.dateKey, period);
-    let bd = 0;
-    const bt = br.length;
-    for (const x of br) {
-      if (x.item.completed) bd += 1;
-    }
-    buckets.push({
-      label: b.label,
-      dateKey: b.dateKey,
-      done: bd,
-      total: bt,
-      pct: completionPercent(bd, bt),
-    });
-
-    const row: Record<string, string | number> = {
-      label: b.label,
-      dateKey: b.dateKey,
-      pct: completionPercent(bd, bt),
-    };
-    for (const key of stackedKeys) {
-      const n = br.filter((x) => optionKeyForItem(x.item) === key && x.item.completed).length;
-      row[key] = n;
-    }
-    stackedSeries.push(row);
-  }
-
   return {
     overall: { done, total, pct: completionPercent(done, total) },
-    buckets,
     byOption,
     byGroup,
-    stackedKeys,
-    stackedSeries,
   };
 }

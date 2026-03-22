@@ -51,7 +51,7 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
   return (
     <Box
       sx={{
-        minHeight: 88,
+        minHeight: 120,
         p: 0.5,
         borderRight: colIndex < 6 ? '1px solid' : 'none',
         borderColor: 'divider',
@@ -126,13 +126,14 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            minHeight: 0,
             cursor: 'pointer',
             borderRadius: 1,
             transition: 'background 0.15s',
             '&:hover': { background: COLORS.smileyHover },
           }}
         >
-          <Box sx={{ width: { xs: 26, sm: 40 }, height: { xs: 26, sm: 40 } }}>
+          <Box sx={{ width: { xs: 50, sm: 78 }, height: { xs: 50, sm: 78 }, flexShrink: 0 }}>
             <SmileyIcon state={smiley} size="100%" />
           </Box>
         </Box>

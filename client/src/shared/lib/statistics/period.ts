@@ -9,14 +9,15 @@ import {
   subMonths,
   subYears,
 } from 'date-fns';
+import { weekStartsMonday } from '@shared/lib/calendarWeek';
 import type { ComparePreset, DateRange, StatisticsPeriod } from './types';
 
 export function getPeriodRange(period: StatisticsPeriod, anchor: Date): DateRange {
   switch (period) {
     case 'week':
       return {
-        start: startOfWeek(anchor, { weekStartsOn: 0 }),
-        end: endOfWeek(anchor, { weekStartsOn: 0 }),
+        start: startOfWeek(anchor, weekStartsMonday),
+        end: endOfWeek(anchor, weekStartsMonday),
       };
     case 'month':
       return { start: startOfMonth(anchor), end: endOfMonth(anchor) };

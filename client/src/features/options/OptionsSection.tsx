@@ -9,6 +9,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import CheckIcon from '@mui/icons-material/Check';
 import AddIcon from '@mui/icons-material/Add';
+import FormatColorResetIcon from '@mui/icons-material/FormatColorReset';
 import { ColorPicker } from '@shared/ui/ColorPicker/ColorPicker';
 
 interface OptionItem {
@@ -33,13 +34,14 @@ interface OptionsSectionProps {
   onAddItem: (groupId: string, value: string) => void;
   onUpdateItem: (groupId: string, itemId: string, value: string) => void;
   onUpdateItemColor: (groupId: string, itemId: string, color: string) => void;
+  onClearGroupColors?: (groupId: string) => void;
   onRemoveItem: (groupId: string, itemId: string) => void;
 }
 
 export const OptionsSection: React.FC<OptionsSectionProps> = ({
   title, itemLabel, groups,
   onAddGroup, onUpdateGroup, onRemoveGroup,
-  onAddItem, onUpdateItem, onUpdateItemColor, onRemoveItem,
+  onAddItem, onUpdateItem, onUpdateItemColor, onClearGroupColors, onRemoveItem,
 }) => {
   const [newGroupTitle, setNewGroupTitle] = useState('');
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -130,6 +132,20 @@ export const OptionsSection: React.FC<OptionsSectionProps> = ({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>{group.title}</Typography>
                 <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex' }}>
+                  {onClearGroupColors && group.items.length > 0 && (
+                    <Tooltip title="Reset all colors in this group to default">
+                      <span>
+                        <IconButton
+                          size="small"
+                          disabled={!group.items.some((i) => Boolean(i.color))}
+                          onClick={() => onClearGroupColors(group.id)}
+                          sx={{ color: 'text.secondary' }}
+                        >
+                          <FormatColorResetIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  )}
                   <IconButton size="small" onClick={() => handleStartEditGroup(group.id, group.title)} sx={{ color: 'text.secondary' }}>
                     <EditOutlinedIcon sx={{ fontSize: 14 }} />
                   </IconButton>

@@ -15,21 +15,20 @@ import {
   addMonths,
   subMonths,
 } from 'date-fns';
+import { WEEKDAY_LABELS_SHORT, weekStartsMonday } from '@shared/lib/calendarWeek';
 
 interface InlineDatePickerProps {
   value: Date;
   onChange: (date: Date) => void;
 }
 
-const WEEKDAYS_FULL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 export const InlineDatePicker: React.FC<InlineDatePickerProps> = ({ value, onChange }) => {
   const [viewDate, setViewDate] = useState<Date>(startOfMonth(value));
 
   const monthStart = startOfMonth(viewDate);
   const monthEnd = endOfMonth(viewDate);
-  const calStart = startOfWeek(monthStart);
-  const calEnd = endOfWeek(monthEnd);
+  const calStart = startOfWeek(monthStart, weekStartsMonday);
+  const calEnd = endOfWeek(monthEnd, weekStartsMonday);
   const days = eachDayOfInterval({ start: calStart, end: calEnd });
 
   const weeks: Date[][] = [];
@@ -59,7 +58,7 @@ export const InlineDatePicker: React.FC<InlineDatePickerProps> = ({ value, onCha
           mb: 0.5,
         }}
       >
-        {WEEKDAYS_FULL.map((day) => (
+        {WEEKDAY_LABELS_SHORT.map((day) => (
           <Typography
             key={day}
             variant="caption"

@@ -103,7 +103,24 @@ export const getDailyProgress = async (req: AuthRequest, res: Response): Promise
         },
       },
       { $unwind: '$checklist' },
-      { $match: { 'checklist.type': { $ne: 'expense' } } },
+      // Align with client isTaskChecklistItem / isExpenseChecklistItem
+      {
+        $match: {
+          $expr: {
+            $not: {
+              $or: [
+                { $eq: ['$checklist.type', 'expense'] },
+                {
+                  $and: [
+                    { $ne: ['$checklist.type', 'task'] },
+                    { $ne: [{ $ifNull: ['$checklist.amount', null] }, null] },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$dueDate' } },

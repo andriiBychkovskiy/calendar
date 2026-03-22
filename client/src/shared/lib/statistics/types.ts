@@ -10,14 +10,6 @@ export interface DateRange {
   end: Date;
 }
 
-export interface TaskBucketPoint {
-  label: string;
-  dateKey: string;
-  done: number;
-  total: number;
-  pct: number;
-}
-
 export interface TaskOptionRow {
   key: string;
   label: string;
@@ -39,12 +31,8 @@ export interface TaskGroupRow {
 
 export interface TaskPeriodStats {
   overall: { done: number; total: number; pct: number };
-  buckets: TaskBucketPoint[];
   byOption: TaskOptionRow[];
   byGroup: TaskGroupRow[];
-  /** Top options for stacked charts: option key -> per-bucket completed count */
-  stackedKeys: string[];
-  stackedSeries: Array<Record<string, string | number>>;
 }
 
 export interface ExpenseCategoryRow {

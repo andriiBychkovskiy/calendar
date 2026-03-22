@@ -12,14 +12,9 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  LineChart,
-  Line,
 } from 'recharts';
 import type { ExpensePeriodStats } from '@shared/lib/statistics';
-import {
-  mergeExpenseBucketsCompare,
-  mergeExpenseCategoriesForCompare,
-} from '@shared/lib/statistics';
+import { mergeExpenseCategoriesForCompare } from '@shared/lib/statistics';
 import { formatCurrencyAmount } from '../lib/formatCurrency';
 
 const CHART_H = 220;
@@ -51,13 +46,6 @@ export const ExpenseChartBlock: React.FC<ExpenseChartBlockProps> = ({
       })),
     [primary.byCategory]
   );
-
-  const bucketLine = useMemo(() => {
-    if (!compare || !secondary) {
-      return primary.bucketTotals.map((b) => ({ label: b.label, amount: b.amount }));
-    }
-    return mergeExpenseBucketsCompare(primary.bucketTotals, secondary.bucketTotals);
-  }, [primary, secondary, compare]);
 
   const catCompare = useMemo(() => {
     if (!compare || !secondary) return [];
@@ -110,47 +98,6 @@ export const ExpenseChartBlock: React.FC<ExpenseChartBlockProps> = ({
 
       <Box>
         <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
-          Spending over time
-        </Typography>
-        <ResponsiveContainer width="100%" height={CHART_H}>
-          {!compare || !secondary ? (
-            <BarChart data={primary.bucketTotals} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748B' }} />
-              <YAxis tick={{ fontSize: 11, fill: '#64748B' }} width={40} />
-              <Tooltip
-                formatter={(v: number) => fmt(v)}
-                contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', fontSize: 12 }}
-              />
-              <Bar dataKey="amount" fill="#6366F1" name="Spent" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          ) : (
-            <LineChart data={bucketLine} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748B' }} />
-              <YAxis tick={{ fontSize: 11, fill: '#64748B' }} width={44} />
-              <Tooltip
-                formatter={(v: number) => fmt(v)}
-                contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', fontSize: 12 }}
-              />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="amountA" name={primaryLabel} stroke="#2D9B6F" strokeWidth={2} dot={{ r: 2 }} />
-              <Line
-                type="monotone"
-                dataKey="amountB"
-                name={secondaryLabel}
-                stroke="#6366F1"
-                strokeWidth={2}
-                strokeDasharray="4 4"
-                dot={{ r: 2 }}
-              />
-            </LineChart>
-          )}
-        </ResponsiveContainer>
-      </Box>
-
-      <Box>
-        <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
           Totals by category
         </Typography>
         <ResponsiveContainer width="100%" height={Math.min(360, 40 + Math.max(primary.byCategory.length, catCompare.length) * 28)}>
@@ -178,7 +125,7 @@ export const ExpenseChartBlock: React.FC<ExpenseChartBlockProps> = ({
               <Tooltip formatter={(v: number) => fmt(v)} contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', fontSize: 12 }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="amountA" name={primaryLabel} fill="#2D9B6F" radius={[0, 4, 4, 0]} />
-              <Bar dataKey="amountB" name={secondaryLabel} fill="#6366F1" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="amountB" name={secondaryLabel} fill="#334155" radius={[0, 4, 4, 0]} />
             </BarChart>
           )}
         </ResponsiveContainer>
@@ -276,7 +223,7 @@ export const ExpenseListBlock: React.FC<ExpenseListBlockProps> = ({
                 <Typography variant="caption" sx={{ fontWeight: 600, color: c.color }}>
                   {c.label}
                 </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 500 }}>
                   {fmt(c.amount)} · {c.pctOfTotal}%
                 </Typography>
               </Box>
@@ -314,7 +261,7 @@ export const ExpenseListBlock: React.FC<ExpenseListBlockProps> = ({
                   </Box>
                   <ExpenseLinearBar
                     value={secondary && secondary.totalSpent > 0 ? (c.amountB / secondary.totalSpent) * 100 : 0}
-                    color="#6366F1"
+                    color="#334155"
                   />
                 </Box>
               </Box>
@@ -364,7 +311,7 @@ export const ExpenseListBlock: React.FC<ExpenseListBlockProps> = ({
                       {fmt(g.amountB)} · {g.pctB}%
                     </Typography>
                   </Box>
-                  <ExpenseLinearBar value={g.pctB} color="#6366F1" />
+                  <ExpenseLinearBar value={g.pctB} color="#334155" />
                 </Box>
               </Box>
             </Box>

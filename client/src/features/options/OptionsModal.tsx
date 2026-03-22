@@ -28,9 +28,9 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose, initi
     currency, saveError,
     setCurrency,
     addTaskGroup, updateTaskGroup, removeTaskGroup,
-    addTaskOption, updateTaskOption, updateTaskOptionColor, removeTaskOption,
+    addTaskOption, updateTaskOption, updateTaskOptionColor, clearTaskGroupColors, removeTaskOption,
     addExpenseGroup, updateExpenseGroup, removeExpenseGroup,
-    addExpenseOption, updateExpenseOption, updateExpenseOptionColor, removeExpenseOption,
+    addExpenseOption, updateExpenseOption, updateExpenseOptionColor, clearExpenseGroupColors, removeExpenseOption,
   } = useOptionsStore();
 
   const handleCurrencyChange = (e: SelectChangeEvent) => setCurrency(e.target.value);
@@ -99,6 +99,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose, initi
             onAddItem={handleAddTaskOption}
             onUpdateItem={updateTaskOption}
             onUpdateItemColor={updateTaskOptionColor}
+            onClearGroupColors={clearTaskGroupColors}
             onRemoveItem={removeTaskOption}
           />
         )}
@@ -141,6 +142,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({ open, onClose, initi
               onAddItem={handleAddExpenseOption}
               onUpdateItem={updateExpenseOption}
               onUpdateItemColor={updateExpenseOptionColor}
+              onClearGroupColors={clearExpenseGroupColors}
               onRemoveItem={removeExpenseOption}
             />
           </>
