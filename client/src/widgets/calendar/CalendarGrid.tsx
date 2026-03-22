@@ -46,13 +46,13 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
+            gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
             borderBottom: '1px solid',
             borderColor: 'divider',
           }}
         >
           {WEEKDAY_LABELS_SHORT.map((day) => (
-            <Box key={day} sx={{ py: 1.25, textAlign: 'center' }}>
+            <Box key={day} sx={{ py: 1.25, textAlign: 'center', minWidth: 0 }}>
               <Typography
                 variant="caption"
                 sx={{
@@ -74,7 +74,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
           key={format(week[0], 'yyyy-MM-dd')}
           sx={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
+            gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
             borderBottom: wi < weeks.length - 1 ? '1px solid' : 'none',
             borderColor: 'divider',
           }}

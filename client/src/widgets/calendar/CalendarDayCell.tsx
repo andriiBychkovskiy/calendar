@@ -51,15 +51,17 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
   return (
     <Box
       sx={{
-        minHeight: 120,
+        minWidth: 0,
+        minHeight: { xs: 104, sm: 120 },
         p: 0.5,
         borderRight: colIndex < 6 ? '1px solid' : 'none',
         borderColor: 'divider',
         background: today ? COLORS.todayBg : inMonth ? '#fff' : COLORS.outOfMonthBg,
         opacity: inMonth ? 1 : 0.5,
         display: 'grid',
-        gridTemplateRows: 'auto 1fr auto',
-        gridTemplateColumns: '1fr auto',
+        gridTemplateRows: 'auto minmax(0, 1fr) auto',
+        gridTemplateColumns: 'minmax(0, 1fr) auto',
+        overflow: 'hidden',
         cursor: 'default',
         transition: 'background 0.15s',
         '&:hover .add-btn': { opacity: 1 },
@@ -67,32 +69,63 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
         '&:hover .copy-btn': { opacity: 1 },
       }}
     >
-      {/* Top-left: date number */}
+      {/* Top-left: date + copy (copy under date on mobile only) */}
       <Box
         sx={{
           gridArea: '1 / 1',
           alignSelf: 'start',
           justifySelf: 'start',
-          width: { xs: today ? 20 : 22, sm: 26 },
-          height: { xs: today ? 20 : 22, sm: 26 },
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: '50%',
-          background: today ? COLORS.todayCircle : 'transparent',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: { xs: 0.125, sm: 0 },
+          minWidth: 0,
         }}
       >
-        <Typography
-          variant="caption"
+        <Box
           sx={{
-            fontSize: { xs: today ? '0.6875rem' : '0.75rem', sm: '0.8125rem' },
-            fontWeight: today ? 600 : 400,
-            color: today ? '#fff' : inMonth ? 'text.primary' : 'text.disabled',
-            lineHeight: 1,
+            width: { xs: today ? 20 : 22, sm: 26 },
+            height: { xs: today ? 20 : 22, sm: 26 },
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%',
+            background: today ? COLORS.todayCircle : 'transparent',
+            flexShrink: 0,
           }}
         >
-          {format(day, 'd')}
-        </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: { xs: today ? '0.6875rem' : '0.75rem', sm: '0.8125rem' },
+              fontWeight: today ? 600 : 400,
+              color: today ? '#fff' : inMonth ? 'text.primary' : 'text.disabled',
+              lineHeight: 1,
+            }}
+          >
+            {format(day, 'd')}
+          </Typography>
+        </Box>
+        {hasProgress && (
+          <IconButton
+            className="copy-btn"
+            size="small"
+            onClick={handleCopy}
+            sx={{
+              display: { xs: 'inline-flex', sm: 'none' },
+              mt: { xs: -0.25, sm: 0 },
+              p: 0.25,
+              minWidth: 0,
+              width: 18,
+              height: 18,
+              color: 'primary.main',
+              transition: 'opacity 0.15s',
+              '&:hover': { opacity: 0.7, background: 'transparent' },
+            }}
+          >
+            <ContentCopyIcon sx={{ fontSize: 11 }} />
+          </IconButton>
+        )}
       </Box>
 
       {/* Top-right: delete button */}
@@ -133,23 +166,32 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
             '&:hover': { background: COLORS.smileyHover },
           }}
         >
-          <Box sx={{ width: { xs: 50, sm: 78 }, height: { xs: 50, sm: 78 }, flexShrink: 0 }}>
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: { xs: 50, sm: 78 },
+              aspectRatio: '1',
+              flexShrink: 1,
+              minHeight: 0,
+            }}
+          >
             <SmileyIcon state={smiley} size="100%" />
           </Box>
         </Box>
       )}
 
-      {/* Bottom-left: copy button */}
+      {/* Bottom-left: copy (desktop / tablet — hidden on xs; mobile uses copy under date) */}
       {hasProgress && (
         <IconButton
           className="copy-btn"
           size="small"
           onClick={handleCopy}
           sx={{
+            display: { xs: 'none', sm: 'inline-flex' },
             gridArea: '3 / 1',
             alignSelf: 'end',
             justifySelf: 'start',
-            opacity: { xs: 1, sm: 0 },
+            opacity: { sm: 0 },
             width: 20,
             height: 20,
             color: 'primary.main',
@@ -169,11 +211,17 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
             gridArea: '3 / 2',
             alignSelf: 'end',
             justifySelf: 'end',
+            minWidth: 0,
+            maxWidth: '100%',
             fontSize: '0.6875rem',
             fontWeight: 600,
             color: 'primary.main',
             lineHeight: 1,
             pb: 0.25,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            textAlign: 'end',
           }}
         >
           {currencySymbol}{dayExpenses % 1 === 0 ? dayExpenses : dayExpenses.toFixed(2)}

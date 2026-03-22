@@ -229,6 +229,7 @@ const CalendarPage: React.FC = () => {
         <Paper
           sx={{
             flex: 1,
+            minHeight: 0,
             borderRadius: 3,
             border: '1px solid',
             borderColor: 'divider',
@@ -238,58 +239,62 @@ const CalendarPage: React.FC = () => {
             flexDirection: 'column',
           }}
         >
-          {/* Sticky header: title + action + weekday row */}
-          <Box
-            sx={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 10,
-              bgcolor: 'background.paper',
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            <Box sx={{ px: 3, pt: 3, pb: 0 }}>
-              <CalendarHeader
-                visibleYear={visibleMonth.year}
-                visibleMonth={visibleMonth.month}
-                onAddTask={() => handleAddTask()}
-                onScrollToToday={handleScrollToToday}
-                onOpenOptions={() => handleOpenOptions()}
-                onOpenStatistics={() => setStatisticsOpen(true)}
-              />
-            </Box>
-
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(7, 1fr)',
-                px: 0,
-              }}
-            >
-              {WEEKDAY_LABELS_SHORT.map((day) => (
-                <Box key={day} sx={{ py: 1.25, textAlign: 'center' }}>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: 500,
-                      color: 'primary.main',
-                      fontSize: '1rem',
-                      letterSpacing: '0.02em',
-                    }}
-                  >
-                    {day}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          </Box>
-
-          {/* Scrollable months */}
+          {/* One scroll region so weekday columns share width with the grid (scrollbar no longer misaligns header vs cells). */}
           <Box
             ref={scrollContainerRef}
-            sx={{ flex: 1, overflowY: 'auto' }}
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              scrollbarGutter: 'stable',
+            }}
           >
+            <Box
+              sx={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+                bgcolor: 'background.paper',
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Box sx={{ px: 3, pt: 3, pb: 0 }}>
+                <CalendarHeader
+                  visibleYear={visibleMonth.year}
+                  visibleMonth={visibleMonth.month}
+                  onAddTask={() => handleAddTask()}
+                  onScrollToToday={handleScrollToToday}
+                  onOpenOptions={() => handleOpenOptions()}
+                  onOpenStatistics={() => setStatisticsOpen(true)}
+                />
+              </Box>
+
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                }}
+              >
+                {WEEKDAY_LABELS_SHORT.map((day) => (
+                  <Box key={day} sx={{ py: 1.25, textAlign: 'center', minWidth: 0 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 500,
+                        color: 'primary.main',
+                        fontSize: { xs: '0.8125rem', sm: '1rem' },
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {day}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
             {loading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
                 <CircularProgress size={32} sx={{ color: 'primary.main' }} />
