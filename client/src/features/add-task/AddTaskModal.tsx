@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Box, Typography, Button, IconButton, CircularProgress,
@@ -7,9 +7,11 @@ import CloseIcon from '@mui/icons-material/Close';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import { format } from 'date-fns';
 import { taskApi } from '@shared/api/task.api';
+import { shallow } from 'zustand/shallow';
 import { useTaskStore } from '@entities/task/store';
 import { useOptionsStore } from '@entities/options/store';
 import type { ChecklistItem } from '@shared/types';
+import { isExpenseChecklistItem, isTaskChecklistItem } from '@shared/lib/checklistItem';
 import { InlineDatePicker } from './InlineDatePicker';
 import { TasksAccordion } from './TasksAccordion';
 import { ExpensesAccordion } from './ExpensesAccordion';
@@ -47,7 +49,10 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
   const patchTask     = useTaskStore((s) => s.patchTask);
   const silentRefetch = useTaskStore((s) => s.silentRefetch);
   const allTasks      = useTaskStore((s) => s.tasks);
-  const { taskOptions, expensesOptions } = useOptionsStore();
+  const { taskOptions, expensesOptions } = useOptionsStore(
+    (s) => ({ taskOptions: s.taskOptions, expensesOptions: s.expensesOptions }),
+    shallow
+  );
 
   const [dueDate, setDueDate]         = useState<Date>(defaultDate ?? new Date());
   const [taskItems, setTaskItems]     = useState<ChecklistItem[]>([]);
@@ -69,18 +74,34 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
   const hasNoTaskOptions = taskOptions.groups.every((g) => g.tasks.length === 0);
   const hasNoExpenseOptions = expensesOptions.groups.every((g) => g.expenses.length === 0);
 
+  const wasOpenRef = useRef(false);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      wasOpenRef.current = false;
+      return;
+    }
+
+    const justOpened = !wasOpenRef.current;
+    wasOpenRef.current = true;
 
     setShowDatePicker(false);
     setError('');
+
+    if (!justOpened && mode === 'create') {
+      return;
+    }
+
+    if (!justOpened && isDirty) {
+      return;
+    }
 
     const dateKey = defaultDate ? format(defaultDate, 'yyyy-MM-dd') : '';
     const dayTasks = allTasks.filter((t) => t.dueDate.split('T')[0] === dateKey);
     const mergedChecklist = dayTasks.flatMap((t) => t.checklist);
 
     if (mode === 'copy') {
-      setTaskItems(mergedChecklist.filter((i) => i.type !== 'expense').map((i) => ({ ...i, completed: false })));
+      setTaskItems(mergedChecklist.filter(isTaskChecklistItem).map((i) => ({ ...i, completed: false })));
       setExpenseItems([]);
       const next = new Date(defaultDate ?? new Date());
       next.setDate(next.getDate() + 1);
@@ -88,22 +109,78 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
       setPrimaryTaskId(null);
       setExtraTaskIds([]);
     } else if (mode === 'view') {
-      setTaskItems(mergedChecklist.filter((i) => i.type !== 'expense'));
-      setExpenseItems(mergedChecklist.filter((i) => i.type === 'expense'));
+      setTaskItems(mergedChecklist.filter(isTaskChecklistItem));
+      setExpenseItems(mergedChecklist.filter(isExpenseChecklistItem));
       setPrimaryTaskId(dayTasks[0]?._id ?? null);
       setExtraTaskIds(dayTasks.slice(1).map((t) => t._id));
       setDueDate(defaultDate ?? new Date());
-    } else {
+    } else if (justOpened) {
       setTaskItems([]);
       setExpenseItems([]);
       setDueDate(defaultDate ?? new Date());
       setPrimaryTaskId(null);
       setExtraTaskIds([]);
     }
-    setIsDirty(false);
-  // allTasks snapshot on open only
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, defaultDate, mode]);
+
+    if (justOpened) {
+      setIsDirty(false);
+    }
+  }, [open, defaultDate, mode, allTasks, isDirty]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const taskColorByOptionId = new Map<string, string | undefined>();
+    for (const g of taskOptions.groups) {
+      for (const t of g.tasks) {
+        const c = t.color?.trim();
+        taskColorByOptionId.set(t.id, c || undefined);
+      }
+    }
+    const expenseColorByOptionId = new Map<string, string | undefined>();
+    for (const g of expensesOptions.groups) {
+      for (const e of g.expenses) {
+        const c = e.color?.trim();
+        expenseColorByOptionId.set(e.id, c || undefined);
+      }
+    }
+
+    setTaskItems((prev) => {
+      let changed = false;
+      const next = prev.map((item) => {
+        if (!isTaskChecklistItem(item) || !item.optionId) return item;
+        const optColor = taskColorByOptionId.get(item.optionId);
+        if (optColor) {
+          if (item.color === optColor) return item;
+          changed = true;
+          return { ...item, color: optColor };
+        }
+        if (item.color === undefined) return item;
+        changed = true;
+        const { color: _drop, ...rest } = item;
+        return rest;
+      });
+      return changed ? next : prev;
+    });
+
+    setExpenseItems((prev) => {
+      let changed = false;
+      const next = prev.map((item) => {
+        if (!isExpenseChecklistItem(item) || !item.optionId) return item;
+        const optColor = expenseColorByOptionId.get(item.optionId);
+        if (optColor) {
+          if (item.color === optColor) return item;
+          changed = true;
+          return { ...item, color: optColor };
+        }
+        if (item.color === undefined) return item;
+        changed = true;
+        const { color: _drop, ...rest } = item;
+        return rest;
+      });
+      return changed ? next : prev;
+    });
+  }, [open, taskOptions, expensesOptions]);
 
   // ─── Task helpers ──────────────────────────────────────────────────────────
 
@@ -203,8 +280,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({ open, onClose, defau
     setApplying(true);
     try {
       if (taskItems.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const checklist = taskItems.map(({ _id, ...rest }) => ({ ...rest, completed: false }));
+        const checklist = taskItems.map(({ _id: _omitId, ...rest }) => ({ ...rest, completed: false }));
         const created = await taskApi.createTask({ dueDate: toDateUTC(dueDate), checklist });
         addTask(created);
       }

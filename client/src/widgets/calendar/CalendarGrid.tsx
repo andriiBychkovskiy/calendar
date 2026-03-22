@@ -9,6 +9,7 @@ import {
   eachDayOfInterval,
   format,
 } from 'date-fns';
+import { WEEKDAY_LABELS_SHORT, weekStartsMonday } from '@shared/lib/calendarWeek';
 import { CalendarDayCell } from './CalendarDayCell';
 import type { ProgressMap } from '@shared/types';
 
@@ -25,8 +26,6 @@ interface CalendarGridProps {
   showWeekdayHeader?: boolean;
 }
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
   year, month, progressMap, hasEntriesMap, expensesMap,
   onAddTask, onDayView, onDeleteDay, onCopyDay, showWeekdayHeader = true,
@@ -36,8 +35,8 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
   const viewDate = new Date(year, month - 1, 1);
   const days = eachDayOfInterval({
-    start: startOfWeek(startOfMonth(viewDate)),
-    end: endOfWeek(endOfMonth(viewDate)),
+    start: startOfWeek(startOfMonth(viewDate), weekStartsMonday),
+    end: endOfWeek(endOfMonth(viewDate), weekStartsMonday),
   });
   const weeks = Array.from({ length: days.length / 7 }, (_, i) => days.slice(i * 7, i * 7 + 7));
 
@@ -52,7 +51,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
             borderColor: 'divider',
           }}
         >
-          {WEEKDAYS.map((day) => (
+          {WEEKDAY_LABELS_SHORT.map((day) => (
             <Box key={day} sx={{ py: 1.25, textAlign: 'center' }}>
               <Typography
                 variant="caption"

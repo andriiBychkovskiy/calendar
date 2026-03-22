@@ -3,7 +3,6 @@ export type {
   StatisticsViewMode,
   ComparePreset,
   DateRange,
-  TaskBucketPoint,
   TaskOptionRow,
   TaskGroupRow,
   TaskPeriodStats,
@@ -13,15 +12,21 @@ export type {
 } from './types';
 export { completionPercent, sharePercent } from './percentages';
 export { getPeriodRange, getCompareAnchor, formatRangeLabel } from './period';
-export { filterTasksInRange, buildTaskOptionMeta, aggregateTaskPeriod } from './taskAggregation';
-export { buildExpenseOptionMeta, aggregateExpensePeriod } from './expenseAggregation';
+export { normalizeStatColor } from './colorVisibility';
 export {
-  mergeTaskCompletionCompare,
-  mergeExpenseBucketsCompare,
+  filterTasksInRange,
+  buildTaskOptionMeta,
+  aggregateTaskPeriod,
+  normalizeTaskStatColor,
+} from './taskAggregation';
+export {
+  buildExpenseOptionMeta,
+  aggregateExpensePeriod,
+  normalizeExpenseStatColor,
+} from './expenseAggregation';
+export {
   mergeTaskOptionsForCompare,
   mergeExpenseCategoriesForCompare,
-  type TaskComparePoint,
-  type ExpenseComparePoint,
   type TaskOptionCompareRow,
   type ExpenseCategoryCompareRow,
 } from './compare';

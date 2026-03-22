@@ -2,14 +2,11 @@ import { eachDayOfInterval, eachMonthOfInterval, format } from 'date-fns';
 import type { ChecklistItem, Task, ExpensesOptions } from '@shared/types';
 import type { DateRange, StatisticsPeriod, ExpenseCategoryRow, ExpenseGroupRow, ExpensePeriodStats } from './types';
 import { sharePercent } from './percentages';
+import { isExpenseChecklistItem } from '@shared/lib/checklistItem';
 import { filterTasksInRange } from './taskAggregation';
+import { normalizeStatColor } from './colorVisibility';
 
-const DEFAULT_EXPENSE_COLOR = '#6366F1';
-const FALLBACK_COLOR = '#94A3B8';
-
-function isExpenseItem(c: ChecklistItem): boolean {
-  return c.type === 'expense';
-}
+export { normalizeStatColor as normalizeExpenseStatColor } from './colorVisibility';
 
 function dateKeyOfTask(t: Task): string {
   return t.dueDate.split('T')[0];
@@ -28,7 +25,7 @@ export function buildExpenseOptionMeta(expensesOptions: ExpensesOptions): Map<st
     for (const opt of g.expenses) {
       map.set(opt.id, {
         label: opt.value,
-        color: opt.color ?? DEFAULT_EXPENSE_COLOR,
+        color: normalizeStatColor(opt.color),
         groupId: g.id,
         groupTitle: g.title,
       });
@@ -48,7 +45,7 @@ function metaForExpense(item: ChecklistItem, lookup: Map<string, ExpenseMeta>): 
   }
   return {
     label: item.text || 'Expense',
-    color: item.color ?? FALLBACK_COLOR,
+    color: normalizeStatColor(item.color),
     groupId: '__other',
     groupTitle: 'Other',
   };
@@ -65,7 +62,7 @@ function collectExpenseRows(tasks: Task[], range: DateRange): ExpenseRow[] {
   for (const t of filterTasksInRange(tasks, range)) {
     const dk = dateKeyOfTask(t);
     for (const c of t.checklist) {
-      if (!isExpenseItem(c)) continue;
+      if (!isExpenseChecklistItem(c)) continue;
       const amount = c.amount ?? 0;
       if (amount <= 0) continue;
       rows.push({ dateKey: dk, item: c, amount });
@@ -122,7 +119,7 @@ export function aggregateExpensePeriod(
     .map(([key, v]) => ({
       key,
       label: v.meta.label,
-      color: v.meta.color,
+      color: normalizeStatColor(v.meta.color),
       groupTitle: v.meta.groupTitle,
       amount: v.amount,
       pctOfTotal: sharePercent(v.amount, totalSpent),

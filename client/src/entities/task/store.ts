@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Task, ProgressMap } from '@shared/types';
+import { isExpenseChecklistItem, isTaskChecklistItem } from '@shared/lib/checklistItem';
 import { taskApi } from '@shared/api/task.api';
 
 interface MonthKey {
@@ -31,7 +32,7 @@ const recalcProgressForDate = (tasks: Task[], dateKey: string): number | undefin
   let total = 0;
   let completed = 0;
   for (const t of dayTasks) {
-    const taskItems = t.checklist.filter((c) => c.type !== 'expense');
+    const taskItems = t.checklist.filter((c) => isTaskChecklistItem(c));
     total += taskItems.length;
     completed += taskItems.filter((c) => c.completed).length;
   }
@@ -52,7 +53,7 @@ const computeExpensesMap = (tasks: Task[]): Record<string, number> => {
   for (const t of tasks) {
     const dateKey = t.dueDate.split('T')[0];
     const dayTotal = t.checklist
-      .filter((c) => c.type === 'expense')
+      .filter((c) => isExpenseChecklistItem(c))
       .reduce((sum, c) => sum + (c.amount ?? 0), 0);
     if (dayTotal > 0) {
       map[dateKey] = (map[dateKey] ?? 0) + dayTotal;

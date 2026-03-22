@@ -1,58 +1,5 @@
-import type { TaskBucketPoint, TaskOptionRow, ExpenseCategoryRow, ExpensePeriodStats } from './types';
+import type { TaskOptionRow, ExpenseCategoryRow } from './types';
 import { completionPercent } from './percentages';
-
-export interface TaskComparePoint {
-  label: string;
-  pctA: number;
-  pctB: number;
-  doneA: number;
-  totalA: number;
-  doneB: number;
-  totalB: number;
-}
-
-export function mergeTaskCompletionCompare(a: TaskBucketPoint[], b: TaskBucketPoint[]): TaskComparePoint[] {
-  const n = Math.max(a.length, b.length);
-  const out: TaskComparePoint[] = [];
-  for (let i = 0; i < n; i += 1) {
-    const pa = a[i];
-    const pb = b[i];
-    out.push({
-      label: pa?.label ?? pb?.label ?? String(i + 1),
-      pctA: pa?.pct ?? 0,
-      pctB: pb?.pct ?? 0,
-      doneA: pa?.done ?? 0,
-      totalA: pa?.total ?? 0,
-      doneB: pb?.done ?? 0,
-      totalB: pb?.total ?? 0,
-    });
-  }
-  return out;
-}
-
-export interface ExpenseComparePoint {
-  label: string;
-  amountA: number;
-  amountB: number;
-}
-
-export function mergeExpenseBucketsCompare(
-  a: ExpensePeriodStats['bucketTotals'],
-  b: ExpensePeriodStats['bucketTotals']
-): ExpenseComparePoint[] {
-  const n = Math.max(a.length, b.length);
-  const out: ExpenseComparePoint[] = [];
-  for (let i = 0; i < n; i += 1) {
-    const pa = a[i];
-    const pb = b[i];
-    out.push({
-      label: pa?.label ?? pb?.label ?? String(i + 1),
-      amountA: pa?.amount ?? 0,
-      amountB: pb?.amount ?? 0,
-    });
-  }
-  return out;
-}
 
 export interface TaskOptionCompareRow {
   key: string;

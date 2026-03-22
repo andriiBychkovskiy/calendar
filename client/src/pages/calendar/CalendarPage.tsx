@@ -27,8 +27,7 @@ import { taskApi } from '@shared/api/task.api';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@shared/config';
-
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+import { WEEKDAY_LABELS_SHORT } from '@shared/lib/calendarWeek';
 
 const CalendarPage: React.FC = () => {
   const navigate = useNavigate();
@@ -76,9 +75,9 @@ const CalendarPage: React.FC = () => {
   );
 
   useEffect(() => {
-    fetchTasks();
-    loadOptions();
-  }, []);
+    void fetchTasks();
+    void loadOptions();
+  }, [fetchTasks, loadOptions]);
 
   useEffect(() => {
     if (loading) return;
@@ -98,7 +97,7 @@ const CalendarPage: React.FC = () => {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loading]);
+  }, [loading, appendNextMonth]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -268,7 +267,7 @@ const CalendarPage: React.FC = () => {
                 px: 0,
               }}
             >
-              {WEEKDAYS.map((day) => (
+              {WEEKDAY_LABELS_SHORT.map((day) => (
                 <Box key={day} sx={{ py: 1.25, textAlign: 'center' }}>
                   <Typography
                     variant="caption"

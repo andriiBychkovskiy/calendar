@@ -1,5 +1,11 @@
 import { create } from 'zustand';
 import { optionsApi } from '@shared/api/options.api';
+import {
+  syncTaskOptionColorToLoadedTasks,
+  syncExpenseOptionColorToLoadedTasks,
+  syncClearTaskOptionColorsBatch,
+  syncClearExpenseOptionColorsBatch,
+} from '@entities/task/syncOptionColorsToTasks';
 import type {
   TaskOptions,
   ExpensesOptions,
@@ -39,6 +45,7 @@ interface OptionsState {
   addTaskOption: (groupId: string, task: TaskOption) => void;
   updateTaskOption: (groupId: string, taskId: string, value: string) => void;
   updateTaskOptionColor: (groupId: string, taskId: string, color: string) => void;
+  clearTaskGroupColors: (groupId: string) => void;
   removeTaskOption: (groupId: string, taskId: string) => void;
   addExpenseGroup: (group: ExpenseGroup) => void;
   updateExpenseGroup: (groupId: string, title: string) => void;
@@ -46,15 +53,33 @@ interface OptionsState {
   addExpenseOption: (groupId: string, expense: ExpenseOption) => void;
   updateExpenseOption: (groupId: string, expenseId: string, value: string) => void;
   updateExpenseOptionColor: (groupId: string, expenseId: string, color: string) => void;
+  clearExpenseGroupColors: (groupId: string) => void;
   removeExpenseOption: (groupId: string, expenseId: string) => void;
 }
 
-const saveToServer = (get: () => OptionsState, set: (partial: Partial<OptionsState>) => void) => {
+const SAVE_DEBOUNCE_MS = 450;
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+const flushSaveToServer = (get: () => OptionsState, set: (partial: Partial<OptionsState>) => void) => {
   const { taskOptions, expensesOptions, currency, tasksIsTextColored, expensesIsTextColored } = get();
   optionsApi
-    .updateOptions({ taskGroups: taskOptions.groups, expenseGroups: expensesOptions.groups, currency, tasksIsTextColored, expensesIsTextColored })
+    .updateOptions({
+      taskGroups: taskOptions.groups,
+      expenseGroups: expensesOptions.groups,
+      currency,
+      tasksIsTextColored,
+      expensesIsTextColored,
+    })
     .then(() => set({ saveError: false }))
     .catch(() => set({ saveError: true }));
+};
+
+const scheduleSaveToServer = (get: () => OptionsState, set: (partial: Partial<OptionsState>) => void) => {
+  if (saveTimer !== null) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    flushSaveToServer(get, set);
+  }, SAVE_DEBOUNCE_MS);
 };
 
 export const useOptionsStore = create<OptionsState>()((set, get) => ({
@@ -86,24 +111,24 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
 
   setTasksIsTextColored: (value) => {
     set({ tasksIsTextColored: value });
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   setExpensesIsTextColored: (value) => {
     set({ expensesIsTextColored: value });
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   setCurrency: (code) => {
     set({ currency: code });
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   addTaskGroup: (group) => {
     set((state) => ({
       taskOptions: { ...state.taskOptions, groups: [...state.taskOptions.groups, group] },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   updateTaskGroup: (groupId, title) => {
@@ -113,7 +138,7 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         groups: state.taskOptions.groups.map((g) => (g.id === groupId ? { ...g, title } : g)),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   removeTaskGroup: (groupId) => {
@@ -123,7 +148,7 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         groups: state.taskOptions.groups.filter((g) => g.id !== groupId),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   addTaskOption: (groupId, task) => {
@@ -135,7 +160,7 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         ),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   updateTaskOption: (groupId, taskId, value) => {
@@ -149,7 +174,7 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         ),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   updateTaskOptionColor: (groupId, taskId, color) => {
@@ -163,7 +188,26 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         ),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
+    void syncTaskOptionColorToLoadedTasks(taskId, color);
+  },
+
+  clearTaskGroupColors: (groupId) => {
+    const groupBefore = get().taskOptions.groups.find((g) => g.id === groupId);
+    const optionIds = groupBefore?.tasks.map((t) => t.id) ?? [];
+
+    set((state) => ({
+      taskOptions: {
+        ...state.taskOptions,
+        groups: state.taskOptions.groups.map((g) =>
+          g.id !== groupId
+            ? g
+            : { ...g, tasks: g.tasks.map(({ id, value }) => ({ id, value })) }
+        ),
+      },
+    }));
+    scheduleSaveToServer(get, set);
+    void syncClearTaskOptionColorsBatch(optionIds);
   },
 
   removeTaskOption: (groupId, taskId) => {
@@ -177,14 +221,14 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         ),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   addExpenseGroup: (group) => {
     set((state) => ({
       expensesOptions: { ...state.expensesOptions, groups: [...state.expensesOptions.groups, group] },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   updateExpenseGroup: (groupId, title) => {
@@ -194,7 +238,7 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         groups: state.expensesOptions.groups.map((g) => (g.id === groupId ? { ...g, title } : g)),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   removeExpenseGroup: (groupId) => {
@@ -204,7 +248,7 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         groups: state.expensesOptions.groups.filter((g) => g.id !== groupId),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   addExpenseOption: (groupId, expense) => {
@@ -216,7 +260,7 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         ),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   updateExpenseOption: (groupId, expenseId, value) => {
@@ -230,7 +274,7 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         ),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 
   updateExpenseOptionColor: (groupId, expenseId, color) => {
@@ -244,7 +288,26 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         ),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
+    void syncExpenseOptionColorToLoadedTasks(expenseId, color);
+  },
+
+  clearExpenseGroupColors: (groupId) => {
+    const groupBefore = get().expensesOptions.groups.find((g) => g.id === groupId);
+    const optionIds = groupBefore?.expenses.map((e) => e.id) ?? [];
+
+    set((state) => ({
+      expensesOptions: {
+        ...state.expensesOptions,
+        groups: state.expensesOptions.groups.map((g) =>
+          g.id !== groupId
+            ? g
+            : { ...g, expenses: g.expenses.map(({ id, value }) => ({ id, value })) }
+        ),
+      },
+    }));
+    scheduleSaveToServer(get, set);
+    void syncClearExpenseOptionColorsBatch(optionIds);
   },
 
   removeExpenseOption: (groupId, expenseId) => {
@@ -258,6 +321,6 @@ export const useOptionsStore = create<OptionsState>()((set, get) => ({
         ),
       },
     }));
-    saveToServer(get, set);
+    scheduleSaveToServer(get, set);
   },
 }));

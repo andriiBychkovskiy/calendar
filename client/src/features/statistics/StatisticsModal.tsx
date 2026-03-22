@@ -40,7 +40,10 @@ export interface StatisticsModalProps {
   taskOptions: TaskOptions;
   expensesOptions: ExpensesOptions;
   currencyCode: string;
-  /** Anchor for the primary week/month/year (e.g. visible calendar month). Defaults to today when opening. */
+  /**
+   * Anchor for month/year stats (e.g. visible calendar month — typically the 15th).
+   * Week view always uses the current calendar date (today) so it matches the active week on the grid.
+   */
   referenceDate?: Date;
 }
 
@@ -59,18 +62,27 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
   const [compare, setCompare] = useState(false);
   const [comparePreset, setComparePreset] = useState<ComparePreset>('previous');
   const [anchorDate, setAnchorDate] = useState(() => new Date());
+  /** Bumps when the modal opens so week stats recompute with a fresh "today". */
+  const [weekRefreshKey, setWeekRefreshKey] = useState(0);
 
   useEffect(() => {
     if (open) {
       setAnchorDate(referenceDate ? new Date(referenceDate) : new Date());
+      setWeekRefreshKey((k) => k + 1);
     }
   }, [open, referenceDate]);
 
-  const primaryRange = useMemo(() => getPeriodRange(period, anchorDate), [period, anchorDate]);
-  const secondaryAnchor = useMemo(
-    () => getCompareAnchor(anchorDate, period, comparePreset),
-    [anchorDate, period, comparePreset]
-  );
+  const primaryRange = useMemo(() => {
+    void weekRefreshKey;
+    const anchor = period === 'week' ? new Date() : anchorDate;
+    return getPeriodRange(period, anchor);
+  }, [period, anchorDate, weekRefreshKey]);
+
+  const secondaryAnchor = useMemo(() => {
+    void weekRefreshKey;
+    const anchor = period === 'week' ? new Date() : anchorDate;
+    return getCompareAnchor(anchor, period, comparePreset);
+  }, [anchorDate, period, comparePreset, weekRefreshKey]);
   const secondaryRange = useMemo(
     () => getPeriodRange(period, secondaryAnchor),
     [period, secondaryAnchor]
@@ -80,12 +92,12 @@ export const StatisticsModal: React.FC<StatisticsModalProps> = ({
   const secondaryLabel = useMemo(() => formatRangeLabel(secondaryRange), [secondaryRange]);
 
   const taskPrimary = useMemo(
-    () => aggregateTaskPeriod(tasks, taskOptions, period, primaryRange),
-    [tasks, taskOptions, period, primaryRange]
+    () => aggregateTaskPeriod(tasks, taskOptions, primaryRange),
+    [tasks, taskOptions, primaryRange]
   );
   const taskSecondary = useMemo(
-    () => (compare ? aggregateTaskPeriod(tasks, taskOptions, period, secondaryRange) : null),
-    [tasks, taskOptions, period, secondaryRange, compare]
+    () => (compare ? aggregateTaskPeriod(tasks, taskOptions, secondaryRange) : null),
+    [tasks, taskOptions, secondaryRange, compare]
   );
 
   const expPrimary = useMemo(

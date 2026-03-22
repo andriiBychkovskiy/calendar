@@ -1,21 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Popover, Tooltip } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
-
-export const PRESET_COLORS = [
-  // Reds / Pinks / Roses
-  '#FF8080', '#FF80A0', '#FF80CC', '#FFB3B3',
-  // Oranges / Peaches / Apricots
-  '#FF9966', '#FFB080', '#FFD9B3', '#FFCC99',
-  // Yellows / Limes
-  '#FFD966', '#E6FFB3', '#B3E6A0', '#99E6B3',
-  // Greens / Teals / Aquas
-  '#80CC80', '#66CCB3', '#B3FFE6', '#80D9FF',
-  // Blues / Periwinkles / Baby blues
-  '#66B3FF', '#80C8FF', '#B3D9FF', '#B3B3FF',
-  // Purples / Lavenders / Lilacs
-  '#9980FF', '#CC80FF', '#E6B3FF', '#D9B3FF',
-];
+import { PRESET_COLORS } from './presetColors';
 
 interface ColorPickerProps {
   value?: string;

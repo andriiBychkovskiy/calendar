@@ -2,8 +2,6 @@ import React, { useMemo } from 'react';
 import { Box, Typography } from '@mui/material';
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
   BarChart,
   Bar,
   XAxis,
@@ -14,14 +12,8 @@ import {
   Cell,
 } from 'recharts';
 import type { TaskPeriodStats } from '@shared/lib/statistics';
-import {
-  mergeTaskCompletionCompare,
-  mergeTaskOptionsForCompare,
-  completionPercent,
-} from '@shared/lib/statistics';
+import { mergeTaskOptionsForCompare, completionPercent } from '@shared/lib/statistics';
 import type { TaskOptionRow } from '@shared/lib/statistics';
-
-const CHART_H = 220;
 
 interface TaskChartBlockProps {
   primary: TaskPeriodStats;
@@ -38,25 +30,10 @@ export const TaskChartBlock: React.FC<TaskChartBlockProps> = ({
   primaryLabel,
   secondaryLabel,
 }) => {
-  const lineData = useMemo(() => {
-    if (!compare || !secondary) {
-      return primary.buckets.map((b) => ({ label: b.label, pct: b.pct, done: b.done, total: b.total }));
-    }
-    return mergeTaskCompletionCompare(primary.buckets, secondary.buckets);
-  }, [primary, secondary, compare]);
-
   const optionCompare = useMemo(() => {
     if (!compare || !secondary) return [];
     return mergeTaskOptionsForCompare(primary.byOption, secondary.byOption).slice(0, 10);
   }, [primary, secondary, compare]);
-
-  const stackedKeys = primary.stackedKeys;
-  const stackedData = primary.stackedSeries;
-  const keyToColor = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const o of primary.byOption) m.set(o.key, o.color);
-    return m;
-  }, [primary.byOption]);
 
   const emptyTasks =
     primary.overall.total === 0 && (!compare || !secondary || secondary.overall.total === 0);
@@ -70,83 +47,6 @@ export const TaskChartBlock: React.FC<TaskChartBlockProps> = ({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-      <Box>
-        <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
-          Completion rate over time
-        </Typography>
-        <ResponsiveContainer width="100%" height={CHART_H}>
-          <LineChart data={lineData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748B' }} />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#64748B' }} unit="%" width={36} />
-            <Tooltip
-              contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', fontSize: 12 }}
-              formatter={(v: number, name: string) => [`${v}%`, name]}
-            />
-            {compare && secondary ? (
-              <Legend wrapperStyle={{ fontSize: 12 }} />
-            ) : null}
-            {!compare || !secondary ? (
-              <Line
-                type="monotone"
-                dataKey="pct"
-                name="Completion"
-                stroke="#2D9B6F"
-                strokeWidth={2}
-                dot={{ r: 3, fill: '#2D9B6F' }}
-              />
-            ) : (
-              <>
-                <Line
-                  type="monotone"
-                  dataKey="pctA"
-                  name={primaryLabel}
-                  stroke="#2D9B6F"
-                  strokeWidth={2}
-                  dot={{ r: 2 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="pctB"
-                  name={secondaryLabel}
-                  stroke="#64748B"
-                  strokeWidth={2}
-                  strokeDasharray="4 4"
-                  dot={{ r: 2 }}
-                />
-              </>
-            )}
-          </LineChart>
-        </ResponsiveContainer>
-      </Box>
-
-      {!compare && stackedKeys.length > 0 ? (
-        <Box>
-          <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
-            Completed items by task (stacked)
-          </Typography>
-          <ResponsiveContainer width="100%" height={CHART_H}>
-            <BarChart data={stackedData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748B' }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#64748B' }} width={28} />
-              <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E2E8F0', fontSize: 12 }} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              {stackedKeys.map((k) => (
-                <Bar
-                  key={k}
-                  dataKey={k}
-                  stackId="done"
-                  fill={keyToColor.get(k) ?? '#94A3B8'}
-                  name={primary.byOption.find((o) => o.key === k)?.label ?? k}
-                  radius={[2, 2, 0, 0]}
-                />
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </Box>
-      ) : null}
-
       {compare && secondary && optionCompare.length > 0 ? (
         <Box>
           <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
@@ -270,7 +170,7 @@ export const TaskListBlock: React.FC<TaskListBlockProps> = ({
                 <Typography variant="caption" sx={{ fontWeight: 600, color: o.color }}>
                   {o.label}
                 </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 500 }}>
                   {o.pct}% · {o.done}/{o.total}
                 </Typography>
               </Box>
@@ -303,7 +203,7 @@ export const TaskListBlock: React.FC<TaskListBlockProps> = ({
                       {o.pctB}% · {o.doneB}/{o.totalB}
                     </Typography>
                   </Box>
-                  <LinearBar value={o.pctB} color="#94A3B8" />
+                  <LinearBar value={o.pctB} color="#334155" />
                 </Box>
               </Box>
             </Box>
