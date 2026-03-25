@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, refresh, logout, googleCallback } from '../controllers/auth.controller';
+import { register, login, refresh, logout, googleCallback, nativeRefreshBridge } from '../controllers/auth.controller';
 import { authRateLimiter } from '../middleware/rateLimiter';
 import { validate } from '../middleware/validate';
 import { registerSchema, loginSchema } from '../validation/auth.schema';
@@ -14,11 +14,21 @@ router.post('/register', authRateLimiter, validate(registerSchema), register);
 router.post('/login', authRateLimiter, validate(loginSchema), login);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
+router.post('/native-bridge', authRateLimiter, nativeRefreshBridge);
 
 router.get('/google', (req, res, next) => {
   if (!googleEnabled()) {
     res.status(503).json({ message: 'Google OAuth is not configured' });
     return;
+  }
+  if (req.query.native === '1') {
+    res.cookie('oauth_from_native', '1', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 10 * 60 * 1000,
+      path: '/',
+    });
   }
   passport.authenticate('google', { scope: ['profile', 'email'], session: false })(req, res, next);
 });

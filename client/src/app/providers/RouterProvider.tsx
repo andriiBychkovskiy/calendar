@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ROUTES } from '@shared/config';
 import { useAuthStore } from '@entities/user/store';
+import { NativeOAuthBridge } from '../NativeOAuthBridge';
 
 const CalendarPage = React.lazy(() => import('@pages/calendar/CalendarPage'));
 const LoginPage = React.lazy(() => import('@pages/auth/LoginPage'));
@@ -20,6 +21,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 export const RouterProvider: React.FC = () => (
   <BrowserRouter>
+    <NativeOAuthBridge />
     <React.Suspense fallback={null}>
       <Routes>
         <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.CALENDAR} replace />} />
