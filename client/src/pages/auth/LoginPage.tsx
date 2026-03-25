@@ -3,6 +3,8 @@ import {
   Box, Paper, Typography, TextField, Button, Link, Alert, CircularProgress, Divider,
 } from '@mui/material';
 import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import { authApi } from '@shared/api/auth.api';
 import { useAuthStore } from '@entities/user/store';
 import { ROUTES } from '@shared/config';
@@ -125,7 +127,14 @@ const LoginPage: React.FC = () => {
         <Button
           fullWidth
           variant="outlined"
-          onClick={() => { window.location.href = '/api/auth/google'; }}
+          onClick={() => {
+            if (Capacitor.isNativePlatform()) {
+              const url = `${window.location.origin}/api/auth/google?native=1`;
+              void Browser.open({ url, presentationStyle: 'fullscreen' });
+              return;
+            }
+            window.location.href = '/api/auth/google';
+          }}
           startIcon={<GoogleIcon />}
           sx={{ py: 1.25, borderColor: 'divider', color: 'text.primary', '&:hover': { borderColor: 'text.secondary', bgcolor: 'action.hover' } }}
         >

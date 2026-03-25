@@ -103,6 +103,36 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+export const nativeRefreshBridge = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const refreshToken = typeof req.body?.refreshToken === 'string' ? req.body.refreshToken : '';
+    if (!refreshToken) {
+      res.status(400).json({ message: 'Missing refresh token' });
+      return;
+    }
+
+    let payload: { userId: string };
+    try {
+      payload = jwt.verify(refreshToken, jwtConfig.refreshSecret) as { userId: string };
+    } catch {
+      res.status(401).json({ message: 'Invalid refresh token' });
+      return;
+    }
+
+    const user = await User.findById(payload.userId);
+    if (!user || user.refreshToken !== hashToken(refreshToken)) {
+      res.status(401).json({ message: 'Invalid refresh token' });
+      return;
+    }
+
+    setRefreshCookie(res, refreshToken);
+    res.status(204).send();
+  } catch (err) {
+    console.error('[nativeRefreshBridge]', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const logout = async (req: Request, res: Response): Promise<void> => {
   try {
     const token = req.cookies?.refreshToken;
@@ -121,6 +151,9 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+/** Keep in sync with `NATIVE_OAUTH_CALLBACK_URL` on the client and AndroidManifest intent `scheme` / `host`. */
+const NATIVE_OAUTH_REDIRECT = 'com.calendar.app://auth/callback';
+
 export const googleCallback = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user as IUser;
@@ -136,6 +169,14 @@ export const googleCallback = async (req: Request, res: Response): Promise<void>
       email: user.email,
       name: user.name,
     });
+    const fromNative = req.cookies?.oauth_from_native === '1';
+    res.clearCookie('oauth_from_native', { path: '/' });
+
+    if (fromNative) {
+      params.set('refresh', refreshToken);
+      res.redirect(`${NATIVE_OAUTH_REDIRECT}?${params.toString()}`);
+      return;
+    }
     res.redirect(`${process.env.CLIENT_URL}/auth/callback?${params}`);
   } catch (err) {
     console.error('[googleCallback]', err);
