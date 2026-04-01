@@ -2,6 +2,9 @@
   "name": "calendar-root",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "postinstall": "npm install --prefix server && npm install --legacy-peer-deps --prefix client",
     "dev": "concurrently --names \"server,client\" --prefix-colors \"cyan,green\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
