@@ -1,8 +1,10 @@
 import React from 'react';
-import { Box, Typography, ButtonBase, IconButton, Tooltip } from '@mui/material';
+import { Box, Typography, ButtonBase, IconButton, Tooltip, useMediaQuery } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import TuneIcon from '@mui/icons-material/Tune';
 import BarChartOutlinedIcon from '@mui/icons-material/BarChartOutlined';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { format } from 'date-fns';
 
 interface CalendarHeaderProps {
@@ -12,7 +14,17 @@ interface CalendarHeaderProps {
   onScrollToToday: () => void;
   onOpenOptions: () => void;
   onOpenStatistics: () => void;
+  userName?: string | null;
+  onLogout?: () => void;
 }
+
+const titleSx = {
+  fontWeight: 700,
+  color: 'primary.main',
+  letterSpacing: '-0.01em',
+  fontSize: { xs: '1.75rem', sm: '2.5rem' },
+  flexShrink: 0,
+} as const;
 
 export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   visibleYear,
@@ -21,161 +33,248 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onScrollToToday,
   onOpenOptions,
   onOpenStatistics,
+  userName,
+  onLogout,
 }) => {
+  const theme = useTheme();
+  const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
+
   const visibleDate = new Date(visibleYear, visibleMonth - 1, 1);
   const now = new Date();
   const isCurrentMonth =
     visibleYear === now.getFullYear() && visibleMonth === now.getMonth() + 1;
 
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: { xs: 'column', sm: 'row' },
-        alignItems: { xs: 'center', sm: 'center' },
-        justifyContent: { xs: 'center', sm: 'space-between' },
-        mb: 2.5,
-        gap: { xs: 1.5, sm: 1 },
-      }}
-    >
-      <Typography
-        variant="h3"
-        sx={{
-          fontWeight: 700,
-          color: 'primary.main',
-          letterSpacing: '-0.01em',
-          fontSize: { xs: '1.75rem', sm: '2.5rem' },
-          flexShrink: 0,
-          textAlign: { xs: 'center', sm: 'left' },
-        }}
+  const showUser = userName != null && userName !== '' && onLogout != null;
+
+  const logoutButton = showUser ? (
+    <Tooltip title={`${userName} — Logout`}>
+      <IconButton
+        size="small"
+        onClick={onLogout}
+        aria-label="Logout"
+        sx={{ color: 'text.secondary', border: '1px solid', borderColor: 'divider', flexShrink: 0 }}
       >
-        Calendar
-      </Typography>
+        <LogoutIcon sx={{ fontSize: 16 }} />
+      </IconButton>
+    </Tooltip>
+  ) : null;
+
+  const mainToolbar = (
+    <>
+      <Tooltip title="Statistics">
+        <IconButton
+          onClick={onOpenStatistics}
+          size="small"
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1.5,
+            color: 'text.secondary',
+            width: 40,
+            height: 40,
+            '&:hover': { bgcolor: 'grey.50', color: 'primary.main', borderColor: 'primary.main' },
+          }}
+        >
+          <BarChartOutlinedIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+      </Tooltip>
+
+      <Tooltip title="Options">
+        <IconButton
+          onClick={onOpenOptions}
+          size="small"
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1.5,
+            color: 'text.secondary',
+            width: 40,
+            height: 40,
+            '&:hover': { bgcolor: 'grey.50', color: 'primary.main', borderColor: 'primary.main' },
+          }}
+        >
+          <TuneIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+      </Tooltip>
 
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: { xs: 'center', sm: 'flex-end' },
-          gap: 1,
-          flexShrink: 0,
-          flexWrap: 'wrap',
+          alignItems: 'stretch',
+          height: 40,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: '12px',
+          overflow: 'hidden',
         }}
       >
-        {/* Options button */}
-        <Tooltip title="Statistics">
-          <IconButton
-            onClick={onOpenStatistics}
-            size="small"
+        <Box
+          sx={{
+            display: isSmUp ? 'flex' : 'none',
+            alignItems: 'center',
+            px: 2,
+            borderRight: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Typography
+            variant="body2"
+            sx={{ fontWeight: 500, color: 'text.primary', whiteSpace: 'nowrap' }}
+          >
+            {format(visibleDate, 'MMMM yyyy')}
+          </Typography>
+        </Box>
+
+        <ButtonBase
+          onClick={onScrollToToday}
+          disabled={isCurrentMonth}
+          sx={{
+            px: isSmUp ? 2.5 : 1.5,
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            color: 'text.primary',
+            bgcolor: 'background.paper',
+            borderRight: '1px solid',
+            borderColor: 'divider',
+            transition: 'background 0.15s, color 0.15s',
+            '&:hover': { bgcolor: 'grey.50', color: 'primary.main' },
+            '&.Mui-disabled': { color: 'text.disabled', opacity: 0.4 },
+          }}
+        >
+          Today
+        </ButtonBase>
+
+        <ButtonBase
+          onClick={onAddTask}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: isSmUp ? 0.75 : 0,
+            px: isSmUp ? 2.5 : 1.5,
+            bgcolor: 'primary.main',
+            color: '#fff',
+            transition: 'background 0.15s',
+            '&:hover': { bgcolor: 'primary.dark' },
+          }}
+        >
+          <AddIcon sx={{ fontSize: 17 }} />
+          <Box
+            component="span"
             sx={{
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 1.5,
-              color: 'text.secondary',
-              width: 40,
-              height: 40,
-              '&:hover': { bgcolor: 'grey.50', color: 'primary.main', borderColor: 'primary.main' },
+              display: isSmUp ? 'inline' : 'none',
+              fontSize: '0.875rem',
+              fontWeight: 600,
             }}
           >
-            <BarChartOutlinedIcon sx={{ fontSize: 18 }} />
-          </IconButton>
-        </Tooltip>
+            Add task
+          </Box>
+        </ButtonBase>
+      </Box>
+    </>
+  );
 
-        <Tooltip title="Options">
-          <IconButton
-            onClick={onOpenOptions}
-            size="small"
-            sx={{
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 1.5,
-              color: 'text.secondary',
-              width: 40,
-              height: 40,
-              '&:hover': { bgcolor: 'grey.50', color: 'primary.main', borderColor: 'primary.main' },
-            }}
-          >
-            <TuneIcon sx={{ fontSize: 18 }} />
-          </IconButton>
-        </Tooltip>
-
-        {/* Unified control group */}
+  if (!isSmUp) {
+    return (
+      <Box sx={{ mb: 2.5 }}>
         <Box
           sx={{
             display: 'flex',
-            alignItems: 'stretch',
-            height: 40,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: '12px',
-            overflow: 'hidden',
+            flexDirection: 'column',
+            gap: 1.5,
+            width: '100%',
           }}
         >
-          {/* Month indicator — desktop only */}
           <Box
             sx={{
-              display: { xs: 'none', sm: 'flex' },
+              position: 'relative',
+              width: '100%',
+              minHeight: 40,
+              display: 'flex',
               alignItems: 'center',
-              px: 2,
-              borderRight: '1px solid',
-              borderColor: 'divider',
-              bgcolor: 'background.paper',
+              justifyContent: 'center',
             }}
           >
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 500, color: 'text.primary', whiteSpace: 'nowrap' }}
-            >
-              {format(visibleDate, 'MMMM yyyy')}
+            <Typography variant="h3" sx={{ ...titleSx, textAlign: 'center' }}>
+              Calendar
             </Typography>
+            {logoutButton != null && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  right: 0,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                }}
+              >
+                {logoutButton}
+              </Box>
+            )}
           </Box>
-
-          {/* Today button */}
-          <ButtonBase
-            onClick={onScrollToToday}
-            disabled={isCurrentMonth}
-            sx={{
-              px: { xs: 1.5, sm: 2.5 },
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              color: 'text.primary',
-              bgcolor: 'background.paper',
-              borderRight: '1px solid',
-              borderColor: 'divider',
-              transition: 'background 0.15s, color 0.15s',
-              '&:hover': { bgcolor: 'grey.50', color: 'primary.main' },
-              '&.Mui-disabled': { color: 'text.disabled', opacity: 0.4 },
-            }}
-          >
-            Today
-          </ButtonBase>
-
-          {/* Add task button */}
-          <ButtonBase
-            onClick={onAddTask}
+          <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: { xs: 0, sm: 0.75 },
-              px: { xs: 1.5, sm: 2.5 },
-              bgcolor: 'primary.main',
-              color: '#fff',
-              transition: 'background 0.15s',
-              '&:hover': { bgcolor: 'primary.dark' },
+              justifyContent: 'center',
+              gap: 1,
+              flexWrap: 'nowrap',
+              minWidth: 0,
             }}
           >
-            <AddIcon sx={{ fontSize: 17 }} />
+            {mainToolbar}
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ mb: 2.5 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+          width: '100%',
+        }}
+      >
+        <Typography variant="h3" sx={{ ...titleSx, textAlign: 'left' }}>
+          Calendar
+        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 1,
+            flexShrink: 0,
+            flexWrap: 'wrap',
+            minWidth: 0,
+          }}
+        >
+          {mainToolbar}
+          {showUser && (
             <Box
-              component="span"
               sx={{
-                display: { xs: 'none', sm: 'inline' },
-                fontSize: '0.875rem',
-                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+                minWidth: 0,
+                flexShrink: 0,
+                pl: 1,
+                ml: 0.25,
+                borderLeft: '1px solid',
+                borderColor: 'divider',
               }}
             >
-              Add task
+              <Typography variant="caption" noWrap sx={{ color: 'text.secondary', maxWidth: 200 }}>
+                {userName}
+              </Typography>
+              {logoutButton}
             </Box>
-          </ButtonBase>
+          )}
         </Box>
       </Box>
     </Box>

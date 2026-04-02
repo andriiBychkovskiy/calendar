@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
+import { shallow } from 'zustand/shallow';
 import {
   Box,
   Paper,
-  IconButton,
   Typography,
   CircularProgress,
-  Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -13,7 +12,6 @@ import {
   Button,
   Alert,
 } from '@mui/material';
-import LogoutIcon from '@mui/icons-material/Logout';
 import { CalendarHeader } from '@widgets/calendar/CalendarHeader';
 import { MonthSection } from '@widgets/calendar/MonthSection';
 import { AddTaskModal } from '@features/add-task/AddTaskModal';
@@ -28,6 +26,21 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@shared/config';
 import { WEEKDAY_LABELS_SHORT } from '@shared/lib/calendarWeek';
+import { monthKeyFromDate } from '@shared/lib/monthKey';
+
+/** Align month block top with the bottom of the sticky header (weekday row), not the scroll viewport top. */
+function scrollMonthSectionBelowStickyHeader(
+  scrollContainer: HTMLDivElement,
+  stickyHeader: HTMLDivElement,
+  monthRoot: HTMLElement,
+  behavior: ScrollBehavior
+): void {
+  const cr = scrollContainer.getBoundingClientRect();
+  const mr = monthRoot.getBoundingClientRect();
+  const topInContent = mr.top - cr.top + scrollContainer.scrollTop;
+  const target = Math.max(0, topInContent - stickyHeader.offsetHeight);
+  scrollContainer.scrollTo({ top: target, behavior });
+}
 
 const CalendarPage: React.FC = () => {
   const navigate = useNavigate();
@@ -43,8 +56,26 @@ const CalendarPage: React.FC = () => {
     fetchTasks,
     appendNextMonth,
     silentRefetch,
-  } = useTaskStore();
-  const { user, clearAuth } = useAuthStore();
+  } = useTaskStore(
+    (s) => ({
+      loadedMonths: s.loadedMonths,
+      progressMap: s.progressMap,
+      hasEntriesMap: s.hasEntriesMap,
+      expensesMap: s.expensesMap,
+      loading: s.loading,
+      loadingMore: s.loadingMore,
+      error: s.error,
+      tasks: s.tasks,
+      fetchTasks: s.fetchTasks,
+      appendNextMonth: s.appendNextMonth,
+      silentRefetch: s.silentRefetch,
+    }),
+    shallow
+  );
+  const { user, clearAuth } = useAuthStore(
+    (s) => ({ user: s.user, clearAuth: s.clearAuth }),
+    shallow
+  );
   const loadOptions = useOptionsStore((s) => s.loadOptions);
   const taskOptions = useOptionsStore((s) => s.taskOptions);
   const expensesOptions = useOptionsStore((s) => s.expensesOptions);
@@ -61,7 +92,10 @@ const CalendarPage: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const stickyHeaderRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  /** Tracks Zustand `loading` across commits — scroll only when fetch finishes (`true` → `false`). */
+  const prevTaskLoadingRef = useRef<boolean | null>(null);
 
   const now = new Date();
   const [visibleMonth, setVisibleMonth] = useState({
@@ -78,6 +112,45 @@ const CalendarPage: React.FC = () => {
     void fetchTasks();
     void loadOptions();
   }, [fetchTasks, loadOptions]);
+
+  const syncVisibleMonthFromScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    const sticky = stickyHeaderRef.current;
+    if (!container || !sticky || loading || loadedMonths.length === 0) return;
+
+    const anchorY = sticky.getBoundingClientRect().bottom;
+    let current = loadedMonths[0];
+
+    for (const { year, month } of loadedMonths) {
+      const el = container.querySelector<HTMLElement>(`[data-month-key="${year}-${month}"]`);
+      if (!el) continue;
+      if (el.getBoundingClientRect().top <= anchorY + 8) {
+        current = { year, month };
+      } else {
+        break;
+      }
+    }
+    setVisibleMonth(current);
+  }, [loading, loadedMonths]);
+
+  useLayoutEffect(() => {
+    const prev = prevTaskLoadingRef.current;
+    prevTaskLoadingRef.current = loading;
+
+    const finishedFetch = prev === true && loading === false;
+    if (!finishedFetch || error) return;
+
+    const container = scrollContainerRef.current;
+    const sticky = stickyHeaderRef.current;
+    if (!container || !sticky) return;
+    const el = container.querySelector<HTMLElement>(
+      `[data-month-key="${monthKeyFromDate(new Date())}"]`
+    );
+    if (!el) return;
+
+    scrollMonthSectionBelowStickyHeader(container, sticky, el, 'auto');
+    requestAnimationFrame(() => syncVisibleMonthFromScroll());
+  }, [loading, error, syncVisibleMonthFromScroll]);
 
   useEffect(() => {
     if (loading) return;
@@ -103,38 +176,19 @@ const CalendarPage: React.FC = () => {
     const container = scrollContainerRef.current;
     if (!container || loading) return;
 
-    const updateVisibleMonth = () => {
-      const containerTop = container.getBoundingClientRect().top;
-      let current = loadedMonths[0];
-
-      for (const { year, month } of loadedMonths) {
-        const el = container.querySelector<HTMLElement>(
-          `[data-month-key="${year}-${month}"]`
-        );
-        if (!el) continue;
-        const elTop = el.getBoundingClientRect().top;
-        if (elTop <= containerTop + 10) {
-          current = { year, month };
-        } else {
-          break;
-        }
-      }
-
-      setVisibleMonth(current);
-    };
-
-    container.addEventListener('scroll', updateVisibleMonth, { passive: true });
-    return () => container.removeEventListener('scroll', updateVisibleMonth);
-  }, [loading, loadedMonths]);
+    container.addEventListener('scroll', syncVisibleMonthFromScroll, { passive: true });
+    return () => container.removeEventListener('scroll', syncVisibleMonthFromScroll);
+  }, [loading, syncVisibleMonthFromScroll]);
 
   const handleScrollToToday = () => {
     const container = scrollContainerRef.current;
-    if (!container) return;
-    const today = new Date();
-    const key = `${today.getFullYear()}-${today.getMonth() + 1}`;
-    const el = container.querySelector<HTMLElement>(`[data-month-key="${key}"]`);
+    const sticky = stickyHeaderRef.current;
+    if (!container || !sticky) return;
+    const el = container.querySelector<HTMLElement>(
+      `[data-month-key="${monthKeyFromDate(new Date())}"]`
+    );
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollMonthSectionBelowStickyHeader(container, sticky, el, 'smooth');
     } else {
       container.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -209,23 +263,6 @@ const CalendarPage: React.FC = () => {
           flexDirection: 'column',
         }}
       >
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1, alignItems: 'center', gap: 1 }}>
-          {user && (
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              {user.name}
-            </Typography>
-          )}
-          <Tooltip title="Logout">
-            <IconButton
-              size="small"
-              onClick={handleLogout}
-              sx={{ color: 'text.secondary', border: '1px solid', borderColor: 'divider' }}
-            >
-              <LogoutIcon sx={{ fontSize: 16 }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-
         <Paper
           sx={{
             flex: 1,
@@ -251,6 +288,7 @@ const CalendarPage: React.FC = () => {
             }}
           >
             <Box
+              ref={stickyHeaderRef}
               sx={{
                 position: 'sticky',
                 top: 0,
@@ -268,6 +306,8 @@ const CalendarPage: React.FC = () => {
                   onScrollToToday={handleScrollToToday}
                   onOpenOptions={() => handleOpenOptions()}
                   onOpenStatistics={() => setStatisticsOpen(true)}
+                  userName={user?.name}
+                  onLogout={handleLogout}
                 />
               </Box>
 

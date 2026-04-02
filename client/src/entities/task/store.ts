@@ -78,8 +78,13 @@ const mergeMonthResults = (results: [Task[], ProgressMap][]) => {
   return { tasks, progressMap, hasEntriesMap: computeHasEntriesMap(tasks), expensesMap: computeExpensesMap(tasks) };
 };
 
-const now = new Date();
-const initialMonth: MonthKey = { year: now.getFullYear(), month: now.getMonth() + 1 };
+/** January … current month of the calendar year (inclusive). */
+const buildInitialLoadedMonths = (): MonthKey[] => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const currentMonth = d.getMonth() + 1;
+  return Array.from({ length: currentMonth }, (_, i) => ({ year, month: i + 1 }));
+};
 
 export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: [],
@@ -89,7 +94,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   loading: false,
   loadingMore: false,
   error: null,
-  loadedMonths: [initialMonth],
+  loadedMonths: buildInitialLoadedMonths(),
 
   fetchTasks: async () => {
     const { loadedMonths } = get();
@@ -110,8 +115,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     if (loadingMore) return;
 
     const last = loadedMonths[loadedMonths.length - 1];
+    if (!last || last.month >= 12) return;
+
     const nextDate = new Date(last.year, last.month, 1);
     const nextMonth: MonthKey = { year: nextDate.getFullYear(), month: nextDate.getMonth() + 1 };
+
+    if (nextMonth.year !== last.year) return;
 
     set({ loadingMore: true });
     try {
