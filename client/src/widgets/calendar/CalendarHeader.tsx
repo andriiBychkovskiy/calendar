@@ -187,29 +187,18 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
         >
           <Box
             sx={{
-              position: 'relative',
               width: '100%',
               minHeight: 40,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 0.75,
             }}
           >
-            <Typography variant="h3" sx={{ ...titleSx, textAlign: 'center' }}>
+            <Typography variant="h3" component="span" sx={{ ...titleSx, textAlign: 'center' }}>
               Calendar
             </Typography>
-            {logoutButton != null && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  right: 0,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                }}
-              >
-                {logoutButton}
-              </Box>
-            )}
+            {logoutButton}
           </Box>
           <Box
             sx={{
@@ -240,9 +229,25 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           width: '100%',
         }}
       >
-        <Typography variant="h3" sx={{ ...titleSx, textAlign: 'left' }}>
-          Calendar
-        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            minWidth: 0,
+            flexShrink: 0,
+          }}
+        >
+          <Typography variant="h3" sx={{ ...titleSx, textAlign: 'left' }}>
+            Calendar
+          </Typography>
+          {logoutButton}
+          {showUser && (
+            <Typography variant="caption" noWrap sx={{ color: 'text.secondary', maxWidth: 200 }}>
+              {userName}
+            </Typography>
+          )}
+        </Box>
         <Box
           sx={{
             display: 'flex',
@@ -255,26 +260,6 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           }}
         >
           {mainToolbar}
-          {showUser && (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.75,
-                minWidth: 0,
-                flexShrink: 0,
-                pl: 1,
-                ml: 0.25,
-                borderLeft: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              <Typography variant="caption" noWrap sx={{ color: 'text.secondary', maxWidth: 200 }}>
-                {userName}
-              </Typography>
-              {logoutButton}
-            </Box>
-          )}
         </Box>
       </Box>
     </Box>
