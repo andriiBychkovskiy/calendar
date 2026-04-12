@@ -19,6 +19,7 @@ interface CalendarGridProps {
   progressMap: ProgressMap;
   hasEntriesMap: Record<string, boolean>;
   expensesMap: Record<string, number>;
+  hasExpenseItemsByDate: Record<string, boolean>;
   onAddTask: (date: Date) => void;
   onDayView: (date: Date) => void;
   onDeleteDay: (date: Date) => void;
@@ -27,7 +28,7 @@ interface CalendarGridProps {
 }
 
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
-  year, month, progressMap, hasEntriesMap, expensesMap,
+  year, month, progressMap, hasEntriesMap, expensesMap, hasExpenseItemsByDate,
   onAddTask, onDayView, onDeleteDay, onCopyDay, showWeekdayHeader = true,
 }) => {
   const currencyCode = useOptionsStore((s) => s.currency);
@@ -89,6 +90,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                 colIndex={di}
                 progress={progressMap[dateKey]}
                 hasEntries={!!hasEntriesMap[dateKey]}
+                hasExpenseLines={!!hasExpenseItemsByDate[dateKey]}
                 dayExpenses={expensesMap[dateKey] ?? 0}
                 currencySymbol={currencySymbol}
                 onAddTask={() => onAddTask(day)}

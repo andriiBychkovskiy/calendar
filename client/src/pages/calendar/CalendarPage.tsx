@@ -27,6 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@shared/config';
 import { WEEKDAY_LABELS_SHORT } from '@shared/lib/calendarWeek';
 import { monthKeyFromDate } from '@shared/lib/monthKey';
+import { isExpenseChecklistItem } from '@shared/lib/checklistItem';
 
 /** Align month block top with the bottom of the sticky header (weekday row), not the scroll viewport top. */
 function scrollMonthSectionBelowStickyHeader(
@@ -72,6 +73,18 @@ const CalendarPage: React.FC = () => {
     }),
     shallow
   );
+
+  const hasExpenseItemsByDate = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    for (const t of tasks) {
+      const dateKey = t.dueDate.split('T')[0];
+      if (t.checklist.some((c) => isExpenseChecklistItem(c))) {
+        map[dateKey] = true;
+      }
+    }
+    return map;
+  }, [tasks]);
+
   const { user, clearAuth } = useAuthStore(
     (s) => ({ user: s.user, clearAuth: s.clearAuth }),
     shallow
@@ -362,6 +375,7 @@ const CalendarPage: React.FC = () => {
                     progressMap={progressMap}
                     hasEntriesMap={hasEntriesMap}
                     expensesMap={expensesMap}
+                    hasExpenseItemsByDate={hasExpenseItemsByDate}
                     onAddTask={handleAddTask}
                     onDayView={handleDayView}
                     onDeleteDay={handleDeleteDay}
