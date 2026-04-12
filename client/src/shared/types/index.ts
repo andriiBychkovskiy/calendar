@@ -40,7 +40,13 @@ export interface AuthResponse {
 
 export type ProgressMap = Record<string, number>;
 
-export type SmileyState = 'sad' | 'slightly' | 'neutral' | 'happy' | 'celebratory';
+export type SmileyState =
+  | 'sad'
+  | 'slightly'
+  | 'neutral'
+  | 'happy'
+  | 'celebratory'
+  | 'expensesOnly';
 
 export const getSmileyState = (percentage: number): SmileyState => {
   if (percentage <= 10) return 'sad';

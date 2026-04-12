@@ -10,6 +10,7 @@ interface MonthSectionProps {
   progressMap: ProgressMap;
   hasEntriesMap: Record<string, boolean>;
   expensesMap: Record<string, number>;
+  hasExpenseItemsByDate: Record<string, boolean>;
   onAddTask: (date: Date) => void;
   onDayView: (date: Date) => void;
   onDeleteDay: (date: Date) => void;
@@ -22,6 +23,7 @@ export const MonthSection: React.FC<MonthSectionProps> = ({
   progressMap,
   hasEntriesMap,
   expensesMap,
+  hasExpenseItemsByDate,
   onAddTask,
   onDayView,
   onDeleteDay,
@@ -54,6 +56,7 @@ export const MonthSection: React.FC<MonthSectionProps> = ({
         progressMap={progressMap}
         hasEntriesMap={hasEntriesMap}
         expensesMap={expensesMap}
+        hasExpenseItemsByDate={hasExpenseItemsByDate}
         onAddTask={onAddTask}
         onDayView={onDayView}
         onDeleteDay={onDeleteDay}

@@ -4,7 +4,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { isToday, isSameMonth, format } from 'date-fns';
 import { SmileyIcon } from '@shared/ui/SmileyIcon/SmileyIcon';
-import { getSmileyState } from '@shared/types';
+import { getSmileyState, type SmileyState } from '@shared/types';
 
 const COLORS = {
   todayBg: '#F0FDF7',
@@ -21,6 +21,8 @@ interface CalendarDayCellProps {
   colIndex: number;
   progress: number | undefined;
   hasEntries: boolean;
+  /** At least one checklist expense row for this day (including amount still empty). */
+  hasExpenseLines: boolean;
   dayExpenses: number;
   currencySymbol: string;
   onAddTask: () => void;
@@ -30,13 +32,23 @@ interface CalendarDayCellProps {
 }
 
 export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
-  day, viewDate, colIndex, progress, hasEntries, dayExpenses, currencySymbol,
+  day, viewDate, colIndex, progress, hasEntries, hasExpenseLines, dayExpenses, currencySymbol,
   onAddTask, onDayView, onDeleteDay, onCopyDay,
 }) => {
   const inMonth = isSameMonth(day, viewDate);
   const today = isToday(day);
   const hasProgress = progress !== undefined;
-  const smiley = hasProgress ? getSmileyState(progress) : null;
+  const smiley: SmileyState | null = hasProgress
+    ? getSmileyState(progress)
+    : hasExpenseLines
+      ? 'expensesOnly'
+      : null;
+
+  const showExpenseFooter = dayExpenses > 0 || hasExpenseLines;
+  const expenseFooterText =
+    dayExpenses > 0
+      ? `${currencySymbol}${dayExpenses % 1 === 0 ? dayExpenses : dayExpenses.toFixed(2)}`
+      : `${currencySymbol}0.00`;
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -204,7 +216,7 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
       )}
 
       {/* Bottom-right: expenses or add button */}
-      {dayExpenses > 0 ? (
+      {showExpenseFooter ? (
         <Typography
           variant="caption"
           sx={{
@@ -224,7 +236,7 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
             textAlign: 'end',
           }}
         >
-          {currencySymbol}{dayExpenses % 1 === 0 ? dayExpenses : dayExpenses.toFixed(2)}
+          {expenseFooterText}
         </Typography>
       ) : !hasEntries ? (
         <IconButton
