@@ -44,6 +44,8 @@ export const SmileyIcon: React.FC<SmileyIconProps> = ({ state, size = '66%' }) =
         height: '100%',
         objectFit: 'contain',
         objectPosition: 'center',
+        // expenses-only.png: лицо выше в кадре, чем у mood-ассетов — на узкой колонке xs визуально «прыгает» вверх
+        ...(state === 'expensesOnly' ? { transform: { xs: 'translateY(10px)', sm: 'none' } } : {}),
       }}
     />
   </Box>
